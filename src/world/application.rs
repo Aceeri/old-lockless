@@ -1,87 +1,61 @@
 
 use std::error::Error as StdError;
-use std::io;
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Duration;
-use std::marker::PhantomData;
 
-use amethyst::assets::{Loader, Source};
+use amethyst::assets::{Loader};
 use amethyst::core::{Stopwatch, Time};
 use amethyst::core::frame_limiter::{FrameLimiter};
-use amethyst::renderer::{Event, WindowEvent};
-use amethyst::shrev::{EventChannel};
+use amethyst::renderer::{Event};
 
-use rayon::{ThreadPool, ThreadPoolBuilder};
+use rayon::{ThreadPoolBuilder};
 
 use specs::prelude::*;
 use specs::common::Errors;
 
-use shred::ParSeq;
+use shred::{RunNow};
 
-use machinae::{StateMachineRef, State, Trans};
+use shrev::EventChannel;
+
+use machinae::{StateMachineRef};
 
 use world::state::GameState;
 
-pub trait Dispatch {
-    fn dispatch(&mut self, res: &Resources);
-    fn setup(&mut self, res: &mut Resources);
-}
-
-impl<P, S> Dispatch for ParSeq<P, S> {
-    fn dispatch(&mut self, res: &Resources) {
-        self.dispatch(res);
-    }
-
-    fn setup(&mut self, res: &mut Resources) {
-        self.setup(res);
-    }
-}
-
-pub struct GameData<'a, S>{
+pub struct GameData {
     pub world: World,
-    //pub dispatcher: ParSeq<&'a ThreadPool, S>,
-    pub dispatcher: Box<Dispatch>,
-    _phantom: PhantomData<(&'a (), S)>,
+    pub dispatcher: Box<for<'a> RunNow<'a>>,
 }
 
-pub struct Application<'a, S> {
-    pub state: StateMachineRef<GameData<'a, S>, (), Event, GameState>,
-    pub data: GameData<'a, S>,
+pub struct Application {
+    pub state: StateMachineRef<GameData, (), Event, GameState>,
+    pub data: GameData,
     events_reader_id: ReaderId<Event>,
-
-    _phantom: PhantomData<(&'a (), S)>,
 }
 
-impl<'a, S> Application<'a, S> {
+impl Application {
     pub fn new_client<P: AsRef<Path>>(path: P) -> Result<Self, String> {
-        let state = GameState::new();
-        let machine = StateMachineRef::new(state);
-        let mut world = World::new();
-
         let thread_pool_builder = ThreadPoolBuilder::new();
-        #[cfg(feature = "profiler")]
-        let thread_pool_builder = thread_pool_builder.start_handler(|index| {
-            register_thread_with_profiler(format!("thread_pool{}", index));
-        });
         let pool = thread_pool_builder
             .build()
             .map(|p| Arc::new(p))
             .map_err(|err| err.description().to_string())?;
-        let mut dispatcher = ::client::dispatcher(&mut world, pool.clone());
+
+        let state = GameState::new();
+        let machine = StateMachineRef::new(state);
+        let mut world = World::new();
+        world.add_resource(pool.clone());
         world.add_resource(Loader::new(path.as_ref().to_owned(), pool.clone()));
-        world.add_resource(pool);
         world.add_resource(EventChannel::<Event>::with_capacity(2000));
         world.add_resource(Errors::default());
         world.add_resource(FrameLimiter::default());
         world.add_resource(Stopwatch::default());
         world.add_resource(Time::default());
 
+        let mut dispatcher = ::client::dispatcher(&mut world, pool.clone())?;
         dispatcher.setup(&mut world.res);
         let data = GameData {
             world: world,
-            dispatcher: dispatcher,
-            _phantom: PhantomData,
+            dispatcher: Box::new(dispatcher),
         };
 
         let events_reader_id = data.world.write_resource::<EventChannel<Event>>().register_reader();
@@ -90,12 +64,15 @@ impl<'a, S> Application<'a, S> {
             state: machine,
             data,
             events_reader_id,
-            _phantom: PhantomData,
         })
     }
 
     pub fn run(&mut self) {
+        println!("application starting");
         self.data.world.write_resource::<Stopwatch>().start();
+        println!("state: {:?}", self.state);
+        self.state.start(&mut self.data)?;
+        println!("state: {:?}", self.state);
         while self.state.running() {
             self.step();
 

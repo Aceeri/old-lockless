@@ -3,6 +3,10 @@ use nphysics3d::object::{BodyHandle, ColliderHandle};
 use specs::prelude::*;
 use specs::storage::DenseVecStorage;
 
+pub use self::sync::PhysicsSyncSystem;
+
+mod sync;
+
 pub struct PhysicsBody {
     handle: BodyHandle,
 }
