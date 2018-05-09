@@ -26,7 +26,7 @@ dependencies = [
 
 [[package]]
 name = "alsa-sys"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -36,7 +36,7 @@ dependencies = [
 [[package]]
 name = "amethyst"
 version = "0.6.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_animation 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "amethyst_assets 0.2.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
@@ -61,7 +61,7 @@ dependencies = [
 [[package]]
 name = "amethyst_animation"
 version = "0.1.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_assets 0.2.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "amethyst_core 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
@@ -77,7 +77,7 @@ dependencies = [
 [[package]]
 name = "amethyst_assets"
 version = "0.2.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_core 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "crossbeam 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -93,7 +93,7 @@ dependencies = [
 [[package]]
 name = "amethyst_audio"
 version = "0.1.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_assets 0.2.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "amethyst_core 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
@@ -106,7 +106,7 @@ dependencies = [
 [[package]]
 name = "amethyst_config"
 version = "0.5.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "ron 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.51 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -115,7 +115,7 @@ dependencies = [
 [[package]]
 name = "amethyst_controls"
 version = "0.1.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_core 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "amethyst_input 0.2.1 (git+https://github.com/amethyst/amethyst?branch=develop)",
@@ -128,7 +128,7 @@ dependencies = [
 [[package]]
 name = "amethyst_core"
 version = "0.1.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "cgmath 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -138,7 +138,7 @@ dependencies = [
  "quickcheck 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.51 (registry+https://github.com/rust-lang/crates.io-index)",
- "shred 0.7.0-alpha5 (git+https://github.com/aceeri/shred?branch=run_now)",
+ "shred 0.7.0-alpha5 (git+https://github.com/slide-rs/shred)",
  "specs 0.11.0-alpha6 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs-hierarchy 0.1.0-alpha6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -146,7 +146,7 @@ dependencies = [
 [[package]]
 name = "amethyst_input"
 version = "0.2.1"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_config 0.5.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "amethyst_core 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
@@ -161,7 +161,7 @@ dependencies = [
 [[package]]
 name = "amethyst_renderer"
 version = "0.6.1"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_assets 0.2.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "amethyst_core 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
@@ -190,7 +190,7 @@ dependencies = [
 [[package]]
 name = "amethyst_ui"
 version = "0.2.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_assets 0.2.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "amethyst_core 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
@@ -203,7 +203,7 @@ dependencies = [
  "gfx_glyph 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hibitset 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusttype 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "shred 0.7.0-alpha5 (git+https://github.com/aceeri/shred?branch=run_now)",
+ "shred 0.7.0-alpha5 (git+https://github.com/slide-rs/shred)",
  "shred-derive 0.5.0-alpha1 (registry+https://github.com/rust-lang/crates.io-index)",
  "shrev 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-normalization 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -214,7 +214,7 @@ dependencies = [
 [[package]]
 name = "amethyst_utils"
 version = "0.2.0"
-source = "git+https://github.com/amethyst/amethyst?branch=develop#2f16546113ab4202ed1a9051abf50c6f29e401ea"
+source = "git+https://github.com/amethyst/amethyst?branch=develop#ca2edbeebecd6810c5e8b790c914e689c6e055ec"
 dependencies = [
  "amethyst_core 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
  "winit 0.13.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -481,7 +481,7 @@ name = "cpal"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "alsa-sys 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "alsa-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "core-foundation-sys 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "coreaudio-rs 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -892,10 +892,10 @@ name = "lockless"
 version = "0.1.0"
 dependencies = [
  "amethyst 0.6.0 (git+https://github.com/amethyst/amethyst?branch=develop)",
- "machinae 0.1.0 (git+https://github.com/rustgd/machinae)",
+ "machinae 0.1.0 (git+https://github.com/aceeri/machinae)",
  "nphysics3d 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "shred 0.7.0-alpha5 (git+https://github.com/aceeri/shred?branch=run_now)",
+ "shred 0.7.0-alpha5 (git+https://github.com/slide-rs/shred)",
  "shrev 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.11.0-alpha6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -920,7 +920,7 @@ dependencies = [
 [[package]]
 name = "machinae"
 version = "0.1.0"
-source = "git+https://github.com/rustgd/machinae#eb7427cf0557d07cc1650d165c50cd90d7ab0be9"
+source = "git+https://github.com/aceeri/machinae#da08978ac3f7f9a74a46cfff96698a27614f6939"
 
 [[package]]
 name = "malloc_buf"
@@ -1506,7 +1506,7 @@ dependencies = [
 [[package]]
 name = "shred"
 version = "0.7.0-alpha5"
-source = "git+https://github.com/aceeri/shred?branch=run_now#7691dfd5aff3aeb5e0e3544eec5297e25c8272d3"
+source = "git+https://github.com/slide-rs/shred#b16a144a39d6b62b3d36f1f7e88e2b5f44215f8c"
 dependencies = [
  "arrayvec 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "fxhash 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1568,7 +1568,7 @@ dependencies = [
  "hibitset 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "mopa 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "shred 0.7.0-alpha5 (git+https://github.com/aceeri/shred?branch=run_now)",
+ "shred 0.7.0-alpha5 (git+https://github.com/slide-rs/shred)",
  "shred-derive 0.5.0-alpha1 (registry+https://github.com/rust-lang/crates.io-index)",
  "shrev 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tuple_utils 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1580,7 +1580,7 @@ version = "0.1.0-alpha6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "hibitset 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "shred 0.7.0-alpha5 (git+https://github.com/aceeri/shred?branch=run_now)",
+ "shred 0.7.0-alpha5 (git+https://github.com/slide-rs/shred)",
  "shred-derive 0.5.0-alpha1 (registry+https://github.com/rust-lang/crates.io-index)",
  "shrev 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.11.0-alpha6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1981,7 +1981,7 @@ dependencies = [
 "checksum aho-corasick 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "ca972c2ea5f742bfce5687b9aef75506a764f61d37f8f649047846a9686ddb66"
 "checksum aho-corasick 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)" = "d6531d44de723825aa81398a6415283229725a00fa30713812ab9323faa82fc4"
 "checksum alga 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "49d80afe08c2e8075d33d3ba01e9f7b0c16c20bebdf1f73df805c4ee862cf8a9"
-"checksum alsa-sys 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9013f855a808ab924a4c08b5c1ec9bd6b04fdb2295b4d570fb723e0ed2802a4f"
+"checksum alsa-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b0edcbbf9ef68f15ae1b620f722180b82a98b6f0628d30baa6b8d2a5abc87d58"
 "checksum amethyst 0.6.0 (git+https://github.com/amethyst/amethyst?branch=develop)" = "<none>"
 "checksum amethyst_animation 0.1.0 (git+https://github.com/amethyst/amethyst?branch=develop)" = "<none>"
 "checksum amethyst_assets 0.2.0 (git+https://github.com/amethyst/amethyst?branch=develop)" = "<none>"
@@ -2074,7 +2074,7 @@ dependencies = [
 "checksum linked-hash-map 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "70fb39025bc7cdd76305867c4eccf2f2dcf6e9a57f5b21a93e1c2d86cd03ec9e"
 "checksum log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "e19e8d5c34a3e0e2223db8e060f9e8264aeeb5c5fc64a4ee9965c062211c024b"
 "checksum log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "89f010e843f2b1a31dbd316b3b8d443758bc634bed37aabade59c686d644e0a2"
-"checksum machinae 0.1.0 (git+https://github.com/rustgd/machinae)" = "<none>"
+"checksum machinae 0.1.0 (git+https://github.com/aceeri/machinae)" = "<none>"
 "checksum malloc_buf 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 "checksum matrixmultiply 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "cac1a66eab356036af85ea093101a14223dc6e3f4c02a59b7d572e5b93270bf7"
 "checksum memchr 0.1.11 (registry+https://github.com/rust-lang/crates.io-index)" = "d8b629fb514376c675b98c1421e80b151d3817ac42d7c667717d282761418d20"
@@ -2144,7 +2144,7 @@ dependencies = [
 "checksum serde 1.0.51 (registry+https://github.com/rust-lang/crates.io-index)" = "21924cc18e5281f232a17c040355fac97732b42cf019c24996a1642bcb169cdb"
 "checksum serde_derive 1.0.51 (registry+https://github.com/rust-lang/crates.io-index)" = "9c624a90bec6fe9bc60d275d7af71c72c26b24cd6c6776d8e344dc4044caa3e2"
 "checksum shared_library 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "8254bf098ce4d8d7cc7cc6de438c5488adc5297e5b7ffef88816c0a91bd289c1"
-"checksum shred 0.7.0-alpha5 (git+https://github.com/aceeri/shred?branch=run_now)" = "<none>"
+"checksum shred 0.7.0-alpha5 (git+https://github.com/slide-rs/shred)" = "<none>"
 "checksum shred-derive 0.5.0-alpha1 (registry+https://github.com/rust-lang/crates.io-index)" = "38dd238e9335702dca589a7a82ff6a9784961ee053a2940836be3334a7b7d834"
 "checksum shrev 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)" = "69bcbc0bd5a03f058312e45ea14c87b388faded87541a20f091431a13577494f"
 "checksum shrev 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "800971605703aae3a54b739c6bb9ed1939dca3425b9402ff6e88815dfea526e6"

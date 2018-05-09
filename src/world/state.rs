@@ -23,8 +23,14 @@ impl<'a> State<&'a mut GameData, (), Event> for GameState {
     fn start(&mut self, args: &mut GameData) -> Result<Trans<Self>, ()> {
         println!("{:?} starting", self);
         match *self {
-            GameState::Loading => Ok(Trans::Switch(GameState::Menu)),
-            GameState::Menu => Ok(Trans::Switch(GameState::Running)),
+            GameState::Loading => {
+                println!("{:?} switching to {:?}", self, GameState::Menu);
+                Ok(Trans::Switch(GameState::Menu))
+            }
+            GameState::Menu => {
+                println!("{:?} switching to {:?}", self, GameState::Running);
+                Ok(Trans::Switch(GameState::Running))
+            }
             GameState::Running => Ok(Trans::None),
         }
     }
@@ -33,7 +39,7 @@ impl<'a> State<&'a mut GameData, (), Event> for GameState {
         data.dispatcher.run_now(&mut data.world.res);
         data.world.maintain();
 
-        //println!("step {:?}", self);
+        println!("step {:?}", self);
 
         Ok(Trans::None)
     }
@@ -55,5 +61,17 @@ impl<'a> State<&'a mut GameData, (), Event> for GameState {
             },
             _ => Ok(Trans::None),
         }
+    }
+
+    fn resume(&mut self, args: &mut GameData) {
+        println!("{:?} resumed", self);
+    }
+
+    fn pause(&mut self, args: &mut GameData) {
+        println!("{:?} paused", self);
+    }
+
+    fn stop(&mut self, args: &mut GameData) {
+        println!("{:?} stopping", self);
     }
 }

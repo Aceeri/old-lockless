@@ -70,9 +70,7 @@ impl Application {
     pub fn run(&mut self) {
         println!("application starting");
         self.data.world.write_resource::<Stopwatch>().start();
-        println!("state: {:?}", self.state);
-        self.state.start(&mut self.data)?;
-        println!("state: {:?}", self.state);
+        self.state.start(&mut self.data);
         while self.state.running() {
             self.step();
 

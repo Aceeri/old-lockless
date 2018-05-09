@@ -8,11 +8,11 @@ amethyst = { git = "https://github.com/amethyst/amethyst", branch = "develop" }
 specs = { version = "0.11.0-alpha6", features = ["common"] }
 shred = "0.7.0-alpha5"
 shrev = "1.0.0"
-machinae = { git = "https://github.com/rustgd/machinae", commit = "450ad44c89405ad687b38896e779fb33380b406b" }
+machinae = { git = "https://github.com/aceeri/machinae" }
 rayon = "1.0.1"
 nphysics3d = "0.8"
 smallvec = "*"
 
 [patch.crates-io]
-shred = { git = "https://github.com/aceeri/shred", branch = "run_now" }
+shred = { git = "https://github.com/slide-rs/shred" }
 
