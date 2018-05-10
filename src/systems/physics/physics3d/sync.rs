@@ -3,22 +3,20 @@ use amethyst::core::GlobalTransform;
 
 use specs::prelude::*;
 
-use shred::Fetch;
+use super::{Body3d, PhysicsWorld3d};
 
-use super::{Body, PhysicsWorld3d};
+pub struct SyncBodySystem3d; 
 
-pub struct SyncBodySystem; 
-
-impl SyncBodySystem {
+impl SyncBodySystem3d {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl<'a> System<'a> for SyncBodySystem {
+impl<'a> System<'a> for SyncBodySystem3d {
     type SystemData = (
         Read<'a, PhysicsWorld3d>,
-        ReadStorage<'a, Body>,
+        ReadStorage<'a, Body3d>,
         WriteStorage<'a, GlobalTransform>,
     );
     fn run(&mut self, data: Self::SystemData) {
@@ -53,3 +51,4 @@ impl<'a> System<'a> for SyncBodySystem {
         Self::SystemData::setup(res); 
     }
 }
+

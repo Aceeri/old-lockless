@@ -5,6 +5,8 @@ use machinae::{State, Trans};
 
 use world::application::GameData;
 
+use ::error::Error;
+
 #[derive(Clone, Debug)]
 pub enum GameState {
     Running,
@@ -19,8 +21,8 @@ impl GameState {
     }
 }
 
-impl<'a> State<&'a mut GameData, (), Event> for GameState {
-    fn start(&mut self, args: &mut GameData) -> Result<Trans<Self>, ()> {
+impl<'a> State<&'a mut GameData, Error, Event> for GameState {
+    fn start(&mut self, _args: &mut GameData) -> Result<Trans<Self>, Error> {
         println!("{:?} starting", self);
         match *self {
             GameState::Loading => {
@@ -35,14 +37,14 @@ impl<'a> State<&'a mut GameData, (), Event> for GameState {
         }
     }
 
-    fn update(&mut self, data: &mut GameData) -> Result<Trans<Self>, ()> {
+    fn update(&mut self, data: &mut GameData) -> Result<Trans<Self>, Error> {
         data.dispatcher.run_now(&mut data.world.res);
         data.world.maintain();
 
         Ok(Trans::None)
     }
 
-    fn event(&mut self, data: &mut GameData, event: Event) -> Result<Trans<Self>, ()> {
+    fn event(&mut self, _data: &mut GameData, event: Event) -> Result<Trans<Self>, Error> {
         //println!("event: {:?}", event);
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -62,15 +64,15 @@ impl<'a> State<&'a mut GameData, (), Event> for GameState {
         }
     }
 
-    fn resume(&mut self, args: &mut GameData) {
+    fn resume(&mut self, _args: &mut GameData) {
         println!("{:?} resumed", self);
     }
 
-    fn pause(&mut self, args: &mut GameData) {
+    fn pause(&mut self, _args: &mut GameData) {
         println!("{:?} paused", self);
     }
 
-    fn stop(&mut self, args: &mut GameData) {
+    fn stop(&mut self, _args: &mut GameData) {
         println!("{:?} stopping", self);
     }
 }

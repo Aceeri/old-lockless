@@ -2,12 +2,9 @@
 extern crate lockless;
 extern crate rayon;
 
-use std::sync::Arc;
-use std::error::Error;
-
-fn main() -> Result<(), String> {
+fn main() -> Result<(), lockless::error::Error> {
     let mut application = lockless::Application::new_client("")?;
-    application.run();
+    application.run()?;
 
     Ok(())
 }

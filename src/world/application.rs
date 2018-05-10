@@ -1,5 +1,4 @@
 
-use std::error::Error as StdError;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -21,24 +20,26 @@ use machinae::{StateMachineRef};
 
 use world::state::GameState;
 
+use ::error::Error;
+
 pub struct GameData {
     pub world: World,
     pub dispatcher: Box<for<'a> RunNow<'a>>,
 }
 
 pub struct Application {
-    pub state: StateMachineRef<GameData, (), Event, GameState>,
+    pub state: StateMachineRef<GameData, Error, Event, GameState>,
     pub data: GameData,
     events_reader_id: ReaderId<Event>,
 }
 
 impl Application {
-    pub fn new_client<P: AsRef<Path>>(path: P) -> Result<Self, String> {
+    pub fn new_client<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         let thread_pool_builder = ThreadPoolBuilder::new();
         let pool = thread_pool_builder
             .build()
             .map(|p| Arc::new(p))
-            .map_err(|err| err.description().to_string())?;
+            .map_err(|err| Error::Rayon(err))?;
 
         let state = GameState::new();
         let machine = StateMachineRef::new(state);
@@ -67,12 +68,12 @@ impl Application {
         })
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), Error> {
         println!("application starting");
         self.data.world.write_resource::<Stopwatch>().start();
-        self.state.start(&mut self.data);
+        self.state.start(&mut self.data)?;
         while self.state.running() {
-            self.step();
+            self.step()?;
 
             self.data.world.write_resource::<FrameLimiter>().wait();
             {
@@ -87,11 +88,12 @@ impl Application {
         }
 
         self.shutdown();
+        Ok(())
     }
 
     pub fn shutdown(&mut self) { }
 
-    fn step(&mut self) {
+    fn step(&mut self) -> Result<(), Error> {
         {
             let events = self.data.world
                 .read_resource::<EventChannel<Event>>()
@@ -101,10 +103,10 @@ impl Application {
 
             for event in events {
                 if !self.state.running() {
-                    return
+                    return Ok(())
                 }
 
-                self.state.event(&mut self.data, event.clone());
+                self.state.event(&mut self.data, event.clone())?;
             }
         }
 
@@ -116,23 +118,25 @@ impl Application {
 
             if do_fixed {
                 if !self.state.running() {
-                    return
+                    return Ok(())
                 }
 
-                self.state.fixed_update(&mut self.data);
+                self.state.fixed_update(&mut self.data)?;
                 self.data.world.write_resource::<Time>().finish_fixed_update();
             }
 
             if !self.state.running() {
-                return
+                return Ok(())
             }
 
-            self.state.update(&mut self.data);
+            self.state.update(&mut self.data)?;
         }
 
         // TODO: replace this with a more customizable method.
         // TODO: effectively, the user should have more control over error handling here
         // TODO: because right now the app will just exit in case of an error.
         self.data.world.write_resource::<Errors>().print_and_exit();
+
+        Ok(())
     }
 }
