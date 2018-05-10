@@ -50,13 +50,26 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> R
 
     let par_seq = ParSeq::new(
         par![
-            ::systems::physics::HandleRemovalSystem3d::new(),
-            ::systems::physics::SyncBodySystem3d::new(),
+            seq![
+                ::systems::physics::HandleRemovalSystem3d::new(),
+                ::systems::physics::SyncBodySystem3d::new(),
+            ],
         ],
         p,
     );
 
-    let render_system = RenderSystem::build(pipe, None).map_err(|e| Error::Amethyst(e.into()))?;
+    let display_config = ::amethyst::renderer::DisplayConfig {
+        title: "Lockless".to_string(),
+        fullscreen: false,
+        dimensions: None,
+        min_dimensions: None,
+        max_dimensions: None,
+        vsync: true,
+        multisampling: 1,
+        visibility: true,
+    };
+
+    let render_system = RenderSystem::build(pipe, Some(display_config)).map_err(|e| Error::Amethyst(e.into()))?;
     let mut thread_local = ThreadLocal::new();
     thread_local.push(Box::new(render_system));
 

@@ -5,6 +5,8 @@ use specs::prelude::*;
 
 use super::{Body3d, PhysicsWorld3d};
 
+/// Syncs the position of the rigid body/multi body with amethyst's
+/// component `GlobalTransform` for rendering.
 pub struct SyncBodySystem3d; 
 
 impl SyncBodySystem3d {
