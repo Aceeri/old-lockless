@@ -6,6 +6,9 @@ extern crate specs;
 extern crate shrev;
 extern crate rayon;
 extern crate smallvec;
+extern crate genmesh;
+extern crate specs_hierarchy;
+extern crate cgmath;
 
 #[macro_use]
 extern crate shred;

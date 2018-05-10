@@ -5,15 +5,17 @@ authors = ["aceeri (conmcclusk@gmail.com)"]
 
 [dependencies]
 #amethyst = { git = "https://github.com/amethyst/amethyst", branch = "develop" }
-amethyst = { git = "https://github.com/rhuagh/amethyst", branch = "fix/update-shrev-specs-after-rewrite" }
+amethyst = { path = "../amethyst" }
 specs = { version = "0.11.0-alpha6", features = ["common"] }
-shred = "0.7.0-alpha5"
+shred = { version = "0.7.0-alpha5", features = ["nightly"] }
 shrev = "1.0.0"
 machinae = { git = "https://github.com/aceeri/machinae" }
 rayon = "1.0.1"
 nphysics3d = "0.8"
 smallvec = "*"
+genmesh = "*"
+cgmath = "*"
+specs-hierarchy = "0.1.0-alpha6"
 
 [patch.crates-io]
 shred = { git = "https://github.com/slide-rs/shred" }
-

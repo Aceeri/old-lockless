@@ -2,6 +2,8 @@
 use std::borrow::Borrow;
 
 use amethyst::renderer::{DrawShaded, Pipeline, Stage, PosNormTex, RenderSystem};
+use amethyst::core::{Parent};
+use amethyst::core::transform::TransformSystem;
 
 use specs::prelude::*;
 use shred::{ParSeq, RunNow, RunWithPool};
@@ -51,7 +53,10 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> R
     let par_seq = ParSeq::new(
         par![
             seq![
+                ::specs_hierarchy::HierarchySystem::<Parent>::new(),
+                TransformSystem::new(),
                 ::systems::physics::HandleRemovalSystem3d::new(),
+                ::systems::physics::PhysicsStep3d::new(),
                 ::systems::physics::SyncBodySystem3d::new(),
             ],
         ],

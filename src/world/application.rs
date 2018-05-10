@@ -91,7 +91,9 @@ impl Application {
         Ok(())
     }
 
-    pub fn shutdown(&mut self) { }
+    pub fn shutdown(&mut self) {
+    
+    }
 
     fn step(&mut self) -> Result<(), Error> {
         {

@@ -1,9 +1,13 @@
 
-use amethyst::renderer::{Event, KeyboardInput, WindowEvent, VirtualKeyCode};
+use amethyst::renderer::{Projection, Material, MaterialDefaults, ActiveCamera, Camera, Event, KeyboardInput, PosNormTex, WindowEvent, VirtualKeyCode, Mesh};
+use amethyst::assets::{Handle, Loader};
+use amethyst::core::{Transform, GlobalTransform};
 
 use machinae::{State, Trans};
 
 use world::application::GameData;
+
+use cgmath::{Array, EuclideanSpace, One, Quaternion, Vector3};
 
 use ::error::Error;
 
@@ -22,10 +26,63 @@ impl GameState {
 }
 
 impl<'a> State<&'a mut GameData, Error, Event> for GameState {
-    fn start(&mut self, _args: &mut GameData) -> Result<Trans<Self>, Error> {
+    fn start(&mut self, data: &mut GameData) -> Result<Trans<Self>, Error> {
         println!("{:?} starting", self);
         match *self {
             GameState::Loading => {
+                use genmesh::{MapToVertices, Triangulate, Vertices};
+                use genmesh::generators::Cube;
+                let vertices = Cube::new()
+                    .vertex(|v| PosNormTex {
+                        position: v.pos.into(),
+                        normal: v.normal.into(),
+                        tex_coord: [0.1, 0.1],
+                    })
+                    .triangulate()
+                        .vertices()
+                        .collect::<Vec<_>>();
+
+                let mesh: Handle<Mesh> = data.world
+                    .read_resource::<Loader>()
+                    .load_from_data(vertices.into(), (), &data.world.read_resource());
+
+                let albedo = data.world.read_resource::<Loader>().load_from_data(
+                    [1.0, 0.0, 0.0, 1.0].into(),
+                    (),
+                    &data.world.read_resource(),
+                );
+                let material = Material {
+                    albedo,
+                    ..data.world.read_resource::<MaterialDefaults>().0.clone()
+                };
+
+                data.world
+                    .create_entity()
+                    .with(mesh)
+                    .with(material)
+                    .with(Transform {
+                        translation: ::cgmath::Point3::new(-0.4, 0., -1.).to_vec(),
+                        rotation: ::cgmath::Quaternion::<f32>::one(),
+                        scale: ::cgmath::Vector3::from_value(0.05),
+                    })
+                    .with(GlobalTransform::default())
+                    .build();
+
+                let camera_entity = data.world
+                    .create_entity()
+                    .with(Camera::standard_3d(500., 500.))
+                    .with(Transform {
+                        rotation: Quaternion::one(),
+                        scale: Vector3::from_value(1.0),
+                        translation: Vector3::new(0., 0., 1.0),
+                    })
+                    .with(GlobalTransform::default())
+                    .build();
+
+                data.world.add_resource(ActiveCamera {
+                    entity: camera_entity,    
+                });
+
                 println!("{:?} switching to {:?}", self, GameState::Menu);
                 Ok(Trans::Switch(GameState::Menu))
             }
