@@ -55,7 +55,7 @@ impl Application {
         dispatcher.setup(&mut world.res);
         let data = GameData {
             world: world,
-            dispatcher: Box::new(dispatcher),
+            dispatcher: dispatcher,
         };
 
         let events_reader_id = data.world.write_resource::<EventChannel<Event>>().register_reader();
@@ -100,6 +100,10 @@ impl Application {
                 .collect::<Vec<_>>();
 
             for event in events {
+                if !self.state.running() {
+                    return
+                }
+
                 self.state.event(&mut self.data, event.clone());
             }
         }
@@ -111,8 +115,16 @@ impl Application {
             };
 
             if do_fixed {
+                if !self.state.running() {
+                    return
+                }
+
                 self.state.fixed_update(&mut self.data);
                 self.data.world.write_resource::<Time>().finish_fixed_update();
+            }
+
+            if !self.state.running() {
+                return
             }
 
             self.state.update(&mut self.data);

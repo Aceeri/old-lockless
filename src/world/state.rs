@@ -39,12 +39,11 @@ impl<'a> State<&'a mut GameData, (), Event> for GameState {
         data.dispatcher.run_now(&mut data.world.res);
         data.world.maintain();
 
-        println!("step {:?}", self);
-
         Ok(Trans::None)
     }
 
     fn event(&mut self, data: &mut GameData, event: Event) -> Result<Trans<Self>, ()> {
+        //println!("event: {:?}", event);
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::KeyboardInput {

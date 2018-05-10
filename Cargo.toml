@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = ["aceeri (conmcclusk@gmail.com)"]
 
 [dependencies]
-amethyst = { git = "https://github.com/amethyst/amethyst", branch = "develop" }
+#amethyst = { git = "https://github.com/amethyst/amethyst", branch = "develop" }
+amethyst = { git = "https://github.com/rhuagh/amethyst", branch = "fix/update-shrev-specs-after-rewrite" }
 specs = { version = "0.11.0-alpha6", features = ["common"] }
 shred = "0.7.0-alpha5"
 shrev = "1.0.0"

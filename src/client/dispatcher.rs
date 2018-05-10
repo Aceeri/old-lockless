@@ -40,7 +40,7 @@ where
 }
 
 
-pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> Result<impl for<'a> RunNow<'a>, String> {
+pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> Result<Box<for<'a> RunNow<'a>>, String> {
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
@@ -49,7 +49,7 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> R
 
     let par_seq = ParSeq::new(
         par![
-            ::systems::physics::PhysicsSyncSystem::new(),
+            ::systems::physics::SyncBodySystem::new(),
         ],
         p,
     );
@@ -58,8 +58,8 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> R
     let mut thread_local = ThreadLocal::new();
     thread_local.push(Box::new(render_system));
 
-    Ok(ClientDispatcher {
+    Ok(Box::new(ClientDispatcher {
         par_seq,
         thread_local,
-    })
+    }))
 }
