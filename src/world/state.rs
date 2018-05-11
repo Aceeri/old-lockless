@@ -31,8 +31,8 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
         match *self {
             GameState::Loading => {
                 use genmesh::{MapToVertices, Triangulate, Vertices};
-                use genmesh::generators::Cube;
-                let vertices = Cube::new()
+                use genmesh::generators::SphereUV;
+                let vertices = SphereUV::new(50, 50)
                     .vertex(|v| PosNormTex {
                         position: v.pos.into(),
                         normal: v.normal.into(),
@@ -61,9 +61,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(mesh)
                     .with(material)
                     .with(Transform {
-                        translation: ::cgmath::Point3::new(-0.4, 0., -1.).to_vec(),
+                        translation: ::cgmath::Point3::new(-3., 0., -3.).to_vec(),
                         rotation: ::cgmath::Quaternion::<f32>::one(),
-                        scale: ::cgmath::Vector3::from_value(0.05),
+                        scale: ::cgmath::Vector3::from_value(1.),
                     })
                     .with(GlobalTransform::default())
                     .build();
@@ -74,7 +74,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(Transform {
                         rotation: Quaternion::one(),
                         scale: Vector3::from_value(1.0),
-                        translation: Vector3::new(0., 0., 1.0),
+                        translation: Vector3::new(0., 0., 5.0),
                     })
                     .with(GlobalTransform::default())
                     .build();

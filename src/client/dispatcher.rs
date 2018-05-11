@@ -1,7 +1,7 @@
 
 use std::borrow::Borrow;
 
-use amethyst::renderer::{DrawShaded, Pipeline, Stage, PosNormTex, RenderSystem};
+use amethyst::renderer::{AmbientColor, Rgba, Light, DrawShaded, Pipeline, Stage, PosNormTex, RenderSystem, PointLight};
 use amethyst::core::{Parent};
 use amethyst::core::transform::TransformSystem;
 
@@ -13,6 +13,14 @@ use smallvec::SmallVec;
 use rayon::ThreadPool;
 
 use ::error::Error;
+
+const SPHERE_COLOUR: [f32; 4] = [0.0, 0.0, 1.0, 1.0]; // blue
+const AMBIENT_LIGHT_COLOUR: Rgba = Rgba(0.002, 0.002, 0.002, 1.0); // near-black
+const POINT_LIGHT_COLOUR: Rgba = Rgba(1.0, 1.0, 1.0, 1.0); // white
+const BACKGROUND_COLOUR: [f32; 4] = [0.0, 0.0, 0.0, 0.0]; // black
+const LIGHT_POSITION: [f32; 3] = [2.0, 2.0, -2.0];
+const LIGHT_RADIUS: f32 = 50.0;
+const LIGHT_INTENSITY: f32 = 3.0;
 
 pub type ThreadLocal<'a> = SmallVec<[Box<for<'b> RunNow<'b> + 'a>; 4]>;
 pub struct ClientDispatcher<'a, P, R> {
@@ -73,6 +81,20 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> R
         multisampling: 1,
         visibility: true,
     };
+
+
+    world.add_resource(AmbientColor(AMBIENT_LIGHT_COLOUR));
+
+    let light: Light = PointLight {
+        center: LIGHT_POSITION.into(),
+        radius: LIGHT_RADIUS,
+        intensity: LIGHT_INTENSITY,
+        color: POINT_LIGHT_COLOUR,
+        ..Default::default()
+    }.into();
+
+    world.register::<Light>();
+    world.create_entity().with(light).build();
 
     let render_system = RenderSystem::build(pipe, Some(display_config)).map_err(|e| Error::Amethyst(e.into()))?;
     let mut thread_local = ThreadLocal::new();
