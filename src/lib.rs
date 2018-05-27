@@ -1,6 +1,7 @@
 
 extern crate amethyst;
 extern crate machinae;
+extern crate nalgebra;
 extern crate nphysics3d;
 extern crate specs;
 extern crate shrev;

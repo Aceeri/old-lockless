@@ -7,4 +7,3 @@ pub enum Error {
     Custom(String),
 }
 
-

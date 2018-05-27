@@ -1,15 +1,21 @@
-
-use amethyst::renderer::{Projection, Material, MaterialDefaults, ActiveCamera, Camera, Event, KeyboardInput, PosNormTex, WindowEvent, VirtualKeyCode, Mesh};
 use amethyst::assets::{Handle, Loader};
-use amethyst::core::{Transform, GlobalTransform};
+use amethyst::core::{GlobalTransform, Transform};
+use amethyst::renderer::{
+    ActiveCamera, Camera, Event, KeyboardInput, Material, MaterialDefaults, Mesh, PosNormTex,
+    Projection, VirtualKeyCode, WindowEvent,
+};
 
 use machinae::{State, Trans};
 
 use world::application::GameData;
 
-use cgmath::{Array, EuclideanSpace, One, Quaternion, Vector3};
+use cgmath::{Array, EuclideanSpace, One};
+use nalgebra::core::Vector3;
+use nphysics3d::algebra::Inertia3;
+use nphysics3d::math::{Inertia, Isometry, Point};
+//use nalgebra::geometry::{Isometry3, Point3, Vector3};
 
-use ::error::Error;
+use error::Error;
 
 #[derive(Clone, Debug)]
 pub enum GameState {
@@ -30,8 +36,8 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
         println!("{:?} starting", self);
         match *self {
             GameState::Loading => {
-                use genmesh::{MapToVertices, Triangulate, Vertices};
                 use genmesh::generators::SphereUV;
+                use genmesh::{MapToVertices, Triangulate, Vertices};
                 let vertices = SphereUV::new(50, 50)
                     .vertex(|v| PosNormTex {
                         position: v.pos.into(),
@@ -39,12 +45,14 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         tex_coord: [0.1, 0.1],
                     })
                     .triangulate()
-                        .vertices()
-                        .collect::<Vec<_>>();
+                    .vertices()
+                    .collect::<Vec<_>>();
 
-                let mesh: Handle<Mesh> = data.world
-                    .read_resource::<Loader>()
-                    .load_from_data(vertices.into(), (), &data.world.read_resource());
+                let mesh: Handle<Mesh> = data.world.read_resource::<Loader>().load_from_data(
+                    vertices.into(),
+                    (),
+                    &data.world.read_resource(),
+                );
 
                 let albedo = data.world.read_resource::<Loader>().load_from_data(
                     [1.0, 0.0, 0.0, 1.0].into(),
@@ -56,6 +64,23 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     ..data.world.read_resource::<MaterialDefaults>().0.clone()
                 };
 
+                let (rigid_handle,) = {
+                    let mut physics_world = data
+                        .world
+                        .write_resource::<::systems::physics::PhysicsWorld3d>();
+                    physics_world.set_gravity(Vector3::new(0.0, 0.0, -9.81));
+                    let mut inertia = Inertia::zero();
+                    inertia.linear = 1.0;
+                    let rigid_handle = physics_world.add_rigid_body(
+                        Isometry::new(Vector3::new(-3.0, 0.0, -3.0), Vector3::zeros()),
+                        inertia.clone(),
+                        Point::origin(),
+                    );
+                    println!("{:?}", inertia);
+
+                    (rigid_handle,)
+                };
+
                 data.world
                     .create_entity()
                     .with(mesh)
@@ -65,22 +90,26 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         rotation: ::cgmath::Quaternion::<f32>::one(),
                         scale: ::cgmath::Vector3::from_value(1.),
                     })
+                    .with(::systems::physics::Body3d {
+                        handle: rigid_handle,
+                    })
                     .with(GlobalTransform::default())
                     .build();
 
-                let camera_entity = data.world
+                let camera_entity = data
+                    .world
                     .create_entity()
                     .with(Camera::standard_3d(500., 500.))
                     .with(Transform {
-                        rotation: Quaternion::one(),
-                        scale: Vector3::from_value(1.0),
-                        translation: Vector3::new(0., 0., 5.0),
+                        rotation: ::cgmath::Quaternion::one(),
+                        scale: ::cgmath::Vector3::from_value(1.0),
+                        translation: ::cgmath::Vector3::new(0., 0., 5.0),
                     })
                     .with(GlobalTransform::default())
                     .build();
 
                 data.world.add_resource(ActiveCamera {
-                    entity: camera_entity,    
+                    entity: camera_entity,
                 });
 
                 println!("{:?} switching to {:?}", self, GameState::Menu);
@@ -101,7 +130,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
         Ok(Trans::None)
     }
 
-    fn event(&mut self, _data: &mut GameData, event: Event) -> Result<Trans<Self>, Error> {
+    fn event(&mut self, data: &mut GameData, event: Event) -> Result<Trans<Self>, Error> {
         //println!("event: {:?}", event);
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -113,8 +142,19 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         },
                     ..
                 } => Ok(Trans::Quit),
-                WindowEvent::Destroyed |
-                WindowEvent::CloseRequested => Ok(Trans::Quit),
+                WindowEvent::Destroyed | WindowEvent::CloseRequested => Ok(Trans::Quit),
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            virtual_keycode: Some(VirtualKeyCode::S),
+                            ..
+                        },
+                    ..
+                } => {
+                    let mut physics_world = data.world.write_resource::<::systems::physics::PhysicsWorld3d>();
+                    physics_world.step();
+                    Ok(Trans::None)
+                },
                 _ => Ok(Trans::None),
             },
             _ => Ok(Trans::None),

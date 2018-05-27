@@ -1,7 +1,7 @@
 
 use std::borrow::Borrow;
 
-use amethyst::renderer::{AmbientColor, Rgba, Light, DrawShaded, Pipeline, Stage, PosNormTex, RenderSystem, PointLight};
+use amethyst::renderer::{AmbientColor, Rgba, Light, DrawFlat, DrawShaded, Pipeline, Stage, PosNormTex, RenderSystem, PointLight};
 use amethyst::core::{Parent};
 use amethyst::core::transform::TransformSystem;
 
@@ -55,11 +55,11 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> R
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
-            .with_pass(DrawShaded::<PosNormTex>::new()),
+            .with_pass(DrawShaded::<PosNormTex>::new())
     );
 
     let par_seq = ParSeq::new(
-        par![
+        //par![
             seq![
                 ::specs_hierarchy::HierarchySystem::<Parent>::new(),
                 TransformSystem::new(),
@@ -67,7 +67,7 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> R
                 ::systems::physics::PhysicsStep3d::new(),
                 ::systems::physics::SyncBodySystem3d::new(),
             ],
-        ],
+        //],
         p,
     );
 
@@ -100,8 +100,12 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(world: &mut World, p: P) -> R
     let mut thread_local = ThreadLocal::new();
     thread_local.push(Box::new(render_system));
 
-    Ok(Box::new(ClientDispatcher {
+    let mut client_dispatcher = ClientDispatcher {
         par_seq,
         thread_local,
-    }))
+    };
+    client_dispatcher.setup(&mut world.res);
+
+    println!("client dispatcher created");
+    Ok(Box::new(client_dispatcher))
 }
