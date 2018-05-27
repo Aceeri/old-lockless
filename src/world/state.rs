@@ -1,8 +1,8 @@
 use amethyst::assets::{Handle, Loader};
 use amethyst::core::{GlobalTransform, Transform};
 use amethyst::renderer::{
-    ActiveCamera, Camera, Event, KeyboardInput, MaterialDefaults, Mesh, PosNormTex,
-    Projection, VirtualKeyCode, WindowEvent,
+    ActiveCamera, Camera, Event, KeyboardInput, MaterialDefaults, Mesh, PosNormTex, Projection,
+    VirtualKeyCode, WindowEvent,
 };
 
 use machinae::{State, Trans};
@@ -10,12 +10,11 @@ use machinae::{State, Trans};
 use world::application::GameData;
 
 use cgmath::{Array, EuclideanSpace, One};
-use nalgebra::core::{Unit, Vector3};
+use nalgebra::core::{Unit, Matrix3, Vector3};
+use ncollide3d::shape::{Ball, Plane, ShapeHandle};
 use nphysics3d::algebra::Inertia3;
 use nphysics3d::math::{Inertia, Isometry, Point};
 use nphysics3d::object::{BodyHandle, Material};
-use ncollide3d::shape::{Ball, ShapeHandle, Plane};
-//use nalgebra::geometry::{Isometry3, Point3, Vector3};
 
 use error::Error;
 
@@ -70,7 +69,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     let mut physics_world = data
                         .world
                         .write_resource::<::systems::physics::PhysicsWorld3d>();
-                    physics_world.set_gravity(Vector3::new(0.0, 0.0, -9.81));
+                    physics_world.set_gravity(Vector3::new(0.0, 0.0, -9.807));
                     let mut inertia = Inertia::zero();
                     inertia.linear = 1.0;
                     let rigid_handle = physics_world.add_rigid_body(
@@ -83,7 +82,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     let ground_handle = BodyHandle::ground();
                     physics_world.add_collider(
                         0.0,
-                        ShapeHandle::new(Plane::new(Unit::new_normalize(Vector3::new(0.0, 0.0, 1.0)))),
+                        ShapeHandle::new(Plane::new(Unit::new_normalize(Vector3::new(
+                            0.0, 0.0, 1.0,
+                        )))),
                         ground_handle,
                         Isometry::identity(),
                         Material::default(),
