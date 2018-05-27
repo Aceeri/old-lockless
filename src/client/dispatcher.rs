@@ -16,11 +16,11 @@ use ::error::Error;
 
 const SPHERE_COLOUR: [f32; 4] = [0.0, 0.0, 1.0, 1.0]; // blue
 const AMBIENT_LIGHT_COLOUR: Rgba = Rgba(0.002, 0.002, 0.002, 1.0); // near-black
-const POINT_LIGHT_COLOUR: Rgba = Rgba(0.5, 1.0, 0.0, 1.0); // white
+const POINT_LIGHT_COLOUR: Rgba = Rgba(1.0, 1.0, 1.0, 1.0); // white
 const BACKGROUND_COLOUR: [f32; 4] = [0.0, 0.0, 0.0, 0.0]; // black
 const LIGHT_POSITION: [f32; 3] = [2.0, 2.0, 6.0];
-const LIGHT_RADIUS: f32 = 50.0;
-const LIGHT_INTENSITY: f32 = 3.0;
+const LIGHT_RADIUS: f32 = 500.0;
+const LIGHT_INTENSITY: f32 = 10.0;
 
 pub type ThreadLocal<'a> = SmallVec<[Box<for<'b> RunNow<'b> + 'a>; 4]>;
 pub struct ClientDispatcher<'a, P, R> {

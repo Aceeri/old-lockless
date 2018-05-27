@@ -10,11 +10,10 @@ use machinae::{State, Trans};
 use world::application::GameData;
 
 use cgmath::{Array, EuclideanSpace, One};
-use nalgebra::core::{Unit, Matrix3, Vector3};
+use nalgebra::core::{Unit, Vector3};
 use ncollide3d::shape::{Ball, Plane, ShapeHandle};
-use nphysics3d::algebra::Inertia3;
 use nphysics3d::math::{Inertia, Isometry, Point};
-use nphysics3d::object::{BodyHandle, Material};
+use nphysics3d::object::{BodyHandle, BodyMut, BodyStatus, Material};
 
 use error::Error;
 
@@ -49,8 +48,24 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .vertices()
                     .collect::<Vec<_>>();
 
+                let plane_vertices = ::genmesh::generators::Plane::new()
+                    .vertex(|v| PosNormTex {
+                        position: v.pos.into(),
+                        normal: v.normal.into(),
+                        tex_coord: [0.1, 0.1],
+                    })
+                    .triangulate()
+                    .vertices()
+                    .collect::<Vec<_>>();
+
                 let mesh: Handle<Mesh> = data.world.read_resource::<Loader>().load_from_data(
                     vertices.into(),
+                    (),
+                    &data.world.read_resource(),
+                );
+
+                let plane_mesh: Handle<Mesh> = data.world.read_resource::<Loader>().load_from_data(
+                    plane_vertices.into(),
                     (),
                     &data.world.read_resource(),
                 );
@@ -65,10 +80,21 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     ..data.world.read_resource::<MaterialDefaults>().0.clone()
                 };
 
+                let plane_albedo = data.world.read_resource::<Loader>().load_from_data(
+                    [0.4, 0.4, 0.4, 1.0].into(),
+                    (),
+                    &data.world.read_resource(),
+                );
+                let plane_material = ::amethyst::renderer::Material {
+                    albedo: plane_albedo,
+                    ..data.world.read_resource::<MaterialDefaults>().0.clone()
+                };
+
                 let (rigid_handle, ground_handle) = {
                     let mut physics_world = data
                         .world
                         .write_resource::<::systems::physics::PhysicsWorld3d>();
+                    //physics_world.set_gravity(Vector3::new(0.0, 0.0, -9.807));
                     physics_world.set_gravity(Vector3::new(0.0, 0.0, -9.807));
                     let mut inertia = Inertia::zero();
                     inertia.linear = 1.0;
@@ -77,7 +103,17 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         inertia.clone(),
                         Point::origin(),
                     );
-                    println!("{:?}", inertia);
+
+                    {
+                        let mut body_mut = physics_world.body_mut(rigid_handle);
+                        match body_mut {
+                            BodyMut::RigidBody(body) => {
+                                body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
+                                body.set_angular_velocity(Vector3::new(0.0, 0.1, 0.0));
+                            }
+                            _ => {}
+                        }
+                    }
 
                     let ground_handle = BodyHandle::ground();
                     physics_world.add_collider(
@@ -87,7 +123,10 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         )))),
                         ground_handle,
                         Isometry::identity(),
-                        Material::default(),
+                        Material {
+                            restitution: 0.7,
+                            friction: 0.6,
+                        },
                     );
 
                     physics_world.add_collider(
@@ -95,7 +134,10 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         ShapeHandle::new(Ball::new(5.0)),
                         rigid_handle,
                         Isometry::identity(),
-                        Material::default(),
+                        Material {
+                            restitution: 0.3,
+                            friction: 0.8,
+                        },
                     );
 
                     (rigid_handle, ground_handle)
@@ -104,7 +146,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                 data.world
                     .create_entity()
                     .with(mesh)
-                    .with(material)
+                    .with(material.clone())
                     .with(Transform {
                         translation: ::cgmath::Point3::new(-3., 0., 5.).to_vec(),
                         rotation: ::cgmath::Quaternion::<f32>::one(),
@@ -116,15 +158,18 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(GlobalTransform::default())
                     .build();
 
-                //data.world
-                //.create_entity()
-                //.with(mesh)
-                //.with(material)
-                //.with(Transform {
-                //translation: ::cgmath::Point3::new(0., 0., 0.).to_vec(),
-                //rotation: ::cgmath::Quaternion::<f32>::one(),
-                //scale: ::cgmath::Vector3::from_value(1.),
-                //})
+                let mut plane_transform = Transform::default();
+                plane_transform.scale = ::cgmath::Vector3::from_value(10000.0);
+                data.world
+                    .create_entity()
+                    .with(plane_mesh)
+                    .with(plane_material.clone())
+                    .with(plane_transform)
+                    .with(::systems::physics::Body3d {
+                        handle: ground_handle,
+                    })
+                    .with(GlobalTransform::default())
+                    .build();
 
                 let camera_entity = data
                     .world
@@ -161,7 +206,6 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
     }
 
     fn event(&mut self, data: &mut GameData, event: Event) -> Result<Trans<Self>, Error> {
-        //println!("event: {:?}", event);
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::KeyboardInput {
@@ -173,20 +217,6 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     ..
                 } => Ok(Trans::Quit),
                 WindowEvent::Destroyed | WindowEvent::CloseRequested => Ok(Trans::Quit),
-                WindowEvent::KeyboardInput {
-                    input:
-                        KeyboardInput {
-                            virtual_keycode: Some(VirtualKeyCode::S),
-                            ..
-                        },
-                    ..
-                } => {
-                    let mut physics_world = data
-                        .world
-                        .write_resource::<::systems::physics::PhysicsWorld3d>();
-                    physics_world.step();
-                    Ok(Trans::None)
-                }
                 _ => Ok(Trans::None),
             },
             _ => Ok(Trans::None),
