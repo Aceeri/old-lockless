@@ -1,7 +1,7 @@
 use amethyst::assets::{Handle, Loader};
 use amethyst::core::{GlobalTransform, Transform};
 use amethyst::renderer::{
-    ActiveCamera, Camera, Event, KeyboardInput, Material, MaterialDefaults, Mesh, PosNormTex,
+    ActiveCamera, Camera, Event, KeyboardInput, MaterialDefaults, Mesh, PosNormTex,
     Projection, VirtualKeyCode, WindowEvent,
 };
 
@@ -10,9 +10,11 @@ use machinae::{State, Trans};
 use world::application::GameData;
 
 use cgmath::{Array, EuclideanSpace, One};
-use nalgebra::core::Vector3;
+use nalgebra::core::{Unit, Vector3};
 use nphysics3d::algebra::Inertia3;
 use nphysics3d::math::{Inertia, Isometry, Point};
+use nphysics3d::object::{BodyHandle, Material};
+use ncollide3d::shape::{Ball, ShapeHandle, Plane};
 //use nalgebra::geometry::{Isometry3, Point3, Vector3};
 
 use error::Error;
@@ -59,12 +61,12 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     (),
                     &data.world.read_resource(),
                 );
-                let material = Material {
+                let material = ::amethyst::renderer::Material {
                     albedo,
                     ..data.world.read_resource::<MaterialDefaults>().0.clone()
                 };
 
-                let (rigid_handle,) = {
+                let (rigid_handle, ground_handle) = {
                     let mut physics_world = data
                         .world
                         .write_resource::<::systems::physics::PhysicsWorld3d>();
@@ -72,13 +74,30 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     let mut inertia = Inertia::zero();
                     inertia.linear = 1.0;
                     let rigid_handle = physics_world.add_rigid_body(
-                        Isometry::new(Vector3::new(-3.0, 0.0, -3.0), Vector3::zeros()),
+                        Isometry::new(Vector3::new(-1.5, 0.0, 10.0), Vector3::zeros()),
                         inertia.clone(),
                         Point::origin(),
                     );
                     println!("{:?}", inertia);
 
-                    (rigid_handle,)
+                    let ground_handle = BodyHandle::ground();
+                    physics_world.add_collider(
+                        0.0,
+                        ShapeHandle::new(Plane::new(Unit::new_normalize(Vector3::new(0.0, 0.0, 1.0)))),
+                        ground_handle,
+                        Isometry::identity(),
+                        Material::default(),
+                    );
+
+                    physics_world.add_collider(
+                        0.0,
+                        ShapeHandle::new(Ball::new(5.0)),
+                        rigid_handle,
+                        Isometry::identity(),
+                        Material::default(),
+                    );
+
+                    (rigid_handle, ground_handle)
                 };
 
                 data.world
@@ -86,7 +105,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(mesh)
                     .with(material)
                     .with(Transform {
-                        translation: ::cgmath::Point3::new(-3., 0., -3.).to_vec(),
+                        translation: ::cgmath::Point3::new(-3., 0., 5.).to_vec(),
                         rotation: ::cgmath::Quaternion::<f32>::one(),
                         scale: ::cgmath::Vector3::from_value(1.),
                     })
@@ -96,14 +115,24 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(GlobalTransform::default())
                     .build();
 
+                //data.world
+                //.create_entity()
+                //.with(mesh)
+                //.with(material)
+                //.with(Transform {
+                //translation: ::cgmath::Point3::new(0., 0., 0.).to_vec(),
+                //rotation: ::cgmath::Quaternion::<f32>::one(),
+                //scale: ::cgmath::Vector3::from_value(1.),
+                //})
+
                 let camera_entity = data
                     .world
                     .create_entity()
                     .with(Camera::standard_3d(500., 500.))
                     .with(Transform {
+                        translation: ::cgmath::Vector3::new(0., 0., 20.0),
                         rotation: ::cgmath::Quaternion::one(),
                         scale: ::cgmath::Vector3::from_value(1.0),
-                        translation: ::cgmath::Vector3::new(0., 0., 5.0),
                     })
                     .with(GlobalTransform::default())
                     .build();
@@ -151,10 +180,12 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         },
                     ..
                 } => {
-                    let mut physics_world = data.world.write_resource::<::systems::physics::PhysicsWorld3d>();
+                    let mut physics_world = data
+                        .world
+                        .write_resource::<::systems::physics::PhysicsWorld3d>();
                     physics_world.step();
                     Ok(Trans::None)
-                },
+                }
                 _ => Ok(Trans::None),
             },
             _ => Ok(Trans::None),

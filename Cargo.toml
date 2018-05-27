@@ -12,6 +12,7 @@ shrev = "1.0.0"
 machinae = { git = "https://github.com/aceeri/machinae" }
 rayon = "1.0.1"
 nalgebra = "0.14"
+ncollide3d = "0.15"
 nphysics3d = "0.8"
 smallvec = "*"
 genmesh = "*"
