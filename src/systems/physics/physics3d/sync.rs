@@ -46,7 +46,7 @@ impl<'a> System<'a> for SyncBodySystem3d {
             let matrix = position.to_homogeneous();
             let fixed: [[f32; 4]; 4] = matrix.into();
             transform_restricted.get_mut_unchecked().0 = fixed.into();
-            println!("transform changed to {:?}", transform_restricted.get_unchecked().0);
+            //println!("transform changed to {:?}", transform_restricted.get_unchecked().0);
         }
     }
 

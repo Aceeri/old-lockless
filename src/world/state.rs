@@ -36,9 +36,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
         println!("{:?} starting", self);
         match *self {
             GameState::Loading => {
-                use genmesh::generators::SphereUV;
+                use genmesh::generators::SphereUv;
                 use genmesh::{MapToVertices, Triangulate, Vertices};
-                let vertices = SphereUV::new(50, 50)
+                let vertices = SphereUv::new(50, 50)
                     .vertex(|v| PosNormTex {
                         position: v.pos.into(),
                         normal: v.normal.into(),
@@ -109,7 +109,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         match body_mut {
                             BodyMut::RigidBody(body) => {
                                 body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
-                                body.set_angular_velocity(Vector3::new(0.0, 0.1, 0.0));
+                                body.set_angular_velocity(Vector3::new(0.0, 0.02, 0.0));
                             }
                             _ => {}
                         }

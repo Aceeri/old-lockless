@@ -1,10 +1,11 @@
 
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Duration;
 
 use amethyst::assets::{Loader};
 use amethyst::core::{Stopwatch, Time};
-use amethyst::core::frame_limiter::{FrameLimiter};
+use amethyst::core::frame_limiter::{FrameLimiter, FrameRateLimitStrategy};
 use amethyst::renderer::{Event};
 
 use rayon::{ThreadPoolBuilder};
@@ -48,7 +49,7 @@ impl Application {
         world.add_resource(Loader::new(path.as_ref().to_owned(), pool.clone()));
         world.add_resource(EventChannel::<Event>::with_capacity(2000));
         world.add_resource(Errors::default());
-        world.add_resource(FrameLimiter::default());
+        world.add_resource(FrameLimiter::new(FrameRateLimitStrategy::SleepAndYield(Duration::from_millis(2)), 144));
         world.add_resource(Stopwatch::default());
         world.add_resource(Time::default());
 
