@@ -1,8 +1,8 @@
 use amethyst::assets::{Handle, Loader};
 use amethyst::core::{GlobalTransform, Transform};
 use amethyst::renderer::{
-    ActiveCamera, Camera, Event, KeyboardInput, MaterialDefaults, Mesh, PosNormTex, Projection,
-    VirtualKeyCode, WindowEvent,
+    ActiveCamera, Camera, Event, KeyboardInput, Light, MaterialDefaults, Mesh, PointLight,
+    PosNormTex, Rgba, VirtualKeyCode, WindowEvent,
 };
 
 use machinae::{State, Trans};
@@ -13,9 +13,14 @@ use cgmath::{Array, EuclideanSpace, One};
 use nalgebra::core::{Unit, Vector3};
 use ncollide3d::shape::{Ball, Plane, ShapeHandle};
 use nphysics3d::math::{Inertia, Isometry, Point};
-use nphysics3d::object::{BodyHandle, BodyMut, BodyStatus, Material};
+use nphysics3d::object::{BodyHandle, BodyMut, Material};
 
 use error::Error;
+
+const POINT_LIGHT_COLOUR: Rgba = Rgba(1.0, 1.0, 1.0, 1.0); // white
+const LIGHT_POSITION: [f32; 3] = [2.0, 2.0, 6.0];
+const LIGHT_RADIUS: f32 = 500.0;
+const LIGHT_INTENSITY: f32 = 10.0;
 
 #[derive(Clone, Debug)]
 pub enum GameState {
@@ -183,6 +188,28 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(GlobalTransform::default())
                     .build();
 
+                let light: Light = PointLight {
+                    radius: LIGHT_RADIUS,
+                    intensity: LIGHT_INTENSITY,
+                    color: POINT_LIGHT_COLOUR,
+                    ..Default::default()
+                }.into();
+
+                let mut transform = Transform::default();
+                let mut global = GlobalTransform(transform.matrix());
+                transform.translation = LIGHT_POSITION.into();
+                //global.0 = transform.matrix();
+
+                let light_entity = data
+                    .world
+                    .create_entity()
+                    .with(light)
+                    .with(transform)
+                    .with(global)
+                    .build();
+
+                println!("light entity: {:?}", light_entity);
+
                 data.world.add_resource(ActiveCamera {
                     entity: camera_entity,
                 });
@@ -205,7 +232,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
         Ok(Trans::None)
     }
 
-    fn event(&mut self, data: &mut GameData, event: Event) -> Result<Trans<Self>, Error> {
+    fn event(&mut self, _data: &mut GameData, event: Event) -> Result<Trans<Self>, Error> {
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::KeyboardInput {

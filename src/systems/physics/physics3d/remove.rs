@@ -1,12 +1,11 @@
-
 use std::collections::HashMap;
 
-use nphysics3d::object::{BodyHandle, ColliderHandle};
+use nphysics3d::object::BodyHandle;
 
 use specs::prelude::*;
 use specs::world::Index;
 
-use super::{Body3d, Collider3d, PhysicsWorld3d};
+use super::{Body3d, PhysicsWorld3d};
 
 pub struct HandleRemovalSystem3d {
     body_handles: HashMap<Index, BodyHandle>,
@@ -39,25 +38,32 @@ impl HandleRemovalSystem3d {
 }
 
 impl<'a> System<'a> for HandleRemovalSystem3d {
-    type SystemData = (
-        Write<'a, PhysicsWorld3d>,
-        ReadStorage<'a, Body3d>,
-    );
+    type SystemData = (Write<'a, PhysicsWorld3d>, ReadStorage<'a, Body3d>);
     fn run(&mut self, data: Self::SystemData) {
         let (mut world, bodies) = data;
 
-        bodies.populate_inserted(self.body_inserted_flag.as_mut().unwrap(), &mut self.body_inserted);
-        bodies.populate_modified(self.body_modified_flag.as_mut().unwrap(), &mut self.body_modified);
-        bodies.populate_removed(self.body_removed_flag.as_mut().unwrap(), &mut self.body_removed);
+        bodies.populate_inserted(
+            self.body_inserted_flag.as_mut().unwrap(),
+            &mut self.body_inserted,
+        );
+        bodies.populate_modified(
+            self.body_modified_flag.as_mut().unwrap(),
+            &mut self.body_modified,
+        );
+        bodies.populate_removed(
+            self.body_removed_flag.as_mut().unwrap(),
+            &mut self.body_removed,
+        );
 
-        let handles = (&self.body_removed).join()
+        let handles = (&self.body_removed)
+            .join()
             .map(|index| self.body_handles.get(&index))
             .filter_map(|handle| handle)
             .map(|handle| *handle)
             .collect::<Vec<BodyHandle>>();
         world.remove_bodies(handles.as_slice());
 
-        for (body, index) in (&bodies, &self.body_modified).join() {
+        for (_body, index) in (&bodies, &self.body_modified).join() {
             if let Some(handle) = self.body_handles.get(&index) {
                 world.remove_bodies(&[*handle])
             }
@@ -69,7 +75,7 @@ impl<'a> System<'a> for HandleRemovalSystem3d {
     }
 
     fn setup(&mut self, res: &mut Resources) {
-        Self::SystemData::setup(res); 
+        Self::SystemData::setup(res);
         let mut bodies: WriteStorage<Body3d> = SystemData::fetch(&res);
 
         self.body_inserted_flag = Some(bodies.track_inserted());

@@ -5,6 +5,7 @@ authors = ["aceeri (conmcclusk@gmail.com)"]
 
 [dependencies]
 amethyst = { git = "https://github.com/amethyst/amethyst", branch = "develop" }
+#amethyst = { path = "../amethyst" }
 specs = { version = "0.11.0", features = ["common"] }
 shred = { version = "0.7.0", features = ["nightly"] }
 shrev = "1.0.0"

@@ -12,7 +12,7 @@ extern crate genmesh;
 extern crate specs_hierarchy;
 extern crate cgmath;
 
-#[macro_use]
+//#[macro_use]
 extern crate shred;
 
 pub use world::application::Application;
