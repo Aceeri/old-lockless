@@ -19,18 +19,6 @@ pub struct FollowCameraSystem {
     pub rotation_speed: f32,
 }
 
-fn linear_interpolate(from: f32, to: f32, amount: f32) -> f32 {
-    (from * (1.0 - amount) + to * amount)
-}
-
-fn vector_interpolate(from: Vector3<f32>, to: Vector3<f32>, amount: f32) -> Vector3<f32> {
-    Vector3::new(
-        linear_interpolate(from.x, to.x, amount),
-        linear_interpolate(from.y, to.y, amount),
-        linear_interpolate(from.z, to.z, amount),
-    )
-}
-
 impl<'a> System<'a> for FollowCameraSystem {
     type SystemData = (
         ReadStorage<'a, GlobalTransform>,
@@ -41,7 +29,6 @@ impl<'a> System<'a> for FollowCameraSystem {
     );
 
     fn run(&mut self, (globals, mut transforms, tags, input, time): Self::SystemData) {
-        println!("delta: {:?}", time.delta_seconds());
         if input.key_is_down(VirtualKeyCode::R) {
             for (mut restricted, tag) in (&mut transforms.restrict_mut(), &tags).join() {
                 let target = globals.get(tag.entity);
@@ -49,7 +36,7 @@ impl<'a> System<'a> for FollowCameraSystem {
                 if let Some(target) = target {
                     let mut camera_transform = restricted.get_mut_unchecked();
                     let target_vector = Vector3::new(target.0.w.x, target.0.w.y, target.0.w.z + self.hover_distance);
-                    camera_transform.translation = vector_interpolate(
+                    camera_transform.translation = ::systems::utils::vector_interpolate(
                         camera_transform.translation,
                         target_vector,
                         time.delta_seconds() * self.follow_speed,

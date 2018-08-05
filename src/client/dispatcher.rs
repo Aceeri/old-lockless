@@ -1,18 +1,20 @@
-
 use std::borrow::Borrow;
 
-use amethyst::core::{Parent};
-use amethyst::renderer::{
-    AmbientColor, DrawShaded, DrawShadedSeparate, Pipeline, PosNormTex, RenderSystem,
-    Rgba, Stage, TextureFormat
-};
-use amethyst::input::{Bindings, InputSystem};
-use amethyst::audio::AudioFormat;
-use amethyst::ui::{DrawUi, FontAsset, FontFormat, UiButtonSystem, UiMouseSystem, UiTransformSystem, UiLoaderSystem, UiKeyboardSystem, ResizeSystem};
-use amethyst::prelude::*; 
-use amethyst::utils::fps_counter::FPSCounterSystem;
 use amethyst::assets::Processor;
+use amethyst::audio::AudioFormat;
 use amethyst::audio::Source;
+use amethyst::core::Parent;
+use amethyst::input::{Bindings, InputSystem};
+use amethyst::prelude::*;
+use amethyst::renderer::{
+    AmbientColor, DrawPbm, DrawPbmSeparate, Pipeline, PosNormTangTex, RenderSystem, Rgba, Stage,
+    TextureFormat,
+};
+use amethyst::ui::{
+    DrawUi, FontAsset, FontFormat, ResizeSystem, UiButtonSystem, UiKeyboardSystem, UiLoaderSystem,
+    UiMouseSystem, UiTransformSystem,
+};
+use amethyst::utils::fps_counter::FPSCounterSystem;
 
 //use shred::{ParSeq, RunNow, RunWithPool};
 use shred::RunNow;
@@ -25,6 +27,7 @@ use rayon::ThreadPool;
 use error::Error;
 
 const AMBIENT_LIGHT_COLOUR: Rgba = Rgba(0.002, 0.002, 0.002, 1.0); // near-black
+                                                                   //const AMBIENT_LIGHT_COLOUR: Rgba = Rgba(1.0, 0.2, 0.2, 1.0); // near-black
 
 //pub type ThreadLocal<'a> = SmallVec<[Box<for<'b> RunNow<'b> + 'a>; 4]>;
 //pub struct ClientDispatcher<'a, P, R> {
@@ -61,9 +64,9 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
-            .with_pass(DrawShaded::<PosNormTex>::new())
-            .with_pass(DrawShadedSeparate::new().with_vertex_skinning())
-            .with_pass(DrawUi::new())
+            .with_pass(DrawPbm::<PosNormTangTex>::new())
+            .with_pass(DrawPbmSeparate::new().with_vertex_skinning())
+            .with_pass(DrawUi::new()),
     );
 
     let display_config = ::amethyst::renderer::DisplayConfig {
@@ -81,10 +84,7 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
     let render_system =
         RenderSystem::build(pipe, Some(display_config)).map_err(|e| Error::Amethyst(e.into()))?;
 
-    let key_bindings_path = format!(
-        "{}/resources/input.ron",
-        env!("CARGO_MANIFEST_DIR")
-    );
+    let key_bindings_path = format!("{}/resources/input.ron", env!("CARGO_MANIFEST_DIR"));
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(
@@ -103,13 +103,13 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             &[],
         )
         .with(
-            ::systems::controller::FlyCameraSystem::new(5.0, 0.3, 0.3),
+            ::systems::controller::FlyCameraSystem::new(15.0, 0.3, 0.3),
             "fly_system",
             &["input_system", "mouse_focus"],
         )
         .with(
-            ::systems::controller::FollowCameraSystem{
-                hover_distance: 30.0, 
+            ::systems::controller::FollowCameraSystem {
+                hover_distance: 30.0,
                 follow_speed: 5.0,
                 rotation_speed: 8.0,
             },
@@ -169,7 +169,16 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             &["ui_mouse_system"],
         )
         .with(FPSCounterSystem, "fps_counter_system", &[])
-        .with(::systems::utils::fps_counter::FPSRenderSystem, "fps_render_system", &[])
+        .with(
+            ::systems::utils::fps_counter::FPSRenderSystem,
+            "fps_render_system",
+            &[],
+        )
+        .with(
+            ::systems::objects::lights::LightFlickeringSystem,
+            "light_flicker",
+            &[],
+        )
         .with_thread_local(render_system)
         .build();
 

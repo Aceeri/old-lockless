@@ -8,6 +8,7 @@ extern crate rayon;
 extern crate smallvec;
 extern crate genmesh;
 extern crate specs_hierarchy;
+extern crate rand;
 
 pub use amethyst::core::cgmath as cgmath;
 pub use amethyst::core::shrev as shrev;

@@ -2,9 +2,9 @@ use amethyst::assets::{Handle, Loader};
 use amethyst::core::{GlobalTransform, Transform};
 use amethyst::renderer::{
     ActiveCamera, Camera, Event, KeyboardInput, Light, MaterialDefaults, Mesh, PointLight,
-    PosNormTex, Rgba, VirtualKeyCode, WindowEvent,
+    PosNormTangTex, Projection, Rgba, SunLight, VirtualKeyCode, WindowEvent,
 };
-use amethyst::ui::{UiTransform, UiText, UiCreator, Anchor};
+use amethyst::ui::{Anchor, UiCreator, UiTransform};
 
 use amethyst::prelude::*;
 
@@ -12,21 +12,17 @@ use machinae::{State, Trans};
 
 use world::application::GameData;
 
-use cgmath::{Array, EuclideanSpace, One};
+use cgmath::{Array, Deg, EuclideanSpace, One};
 use nalgebra::core::{Unit, Vector3};
 use ncollide3d::shape::{Cuboid, Plane, ShapeHandle};
-use nphysics3d::math::{Inertia, Isometry, Point, Force};
+use nphysics3d::math::Isometry;
 use nphysics3d::object::{BodyHandle, BodyMut, Material};
 use nphysics3d::volumetric::Volumetric;
 
 use error::Error;
 
+use systems::objects::lights::FlickerLight;
 use systems::utils::fps_counter::FPSTag;
-
-const POINT_LIGHT_COLOUR: Rgba = Rgba(1.0, 1.0, 1.0, 1.0); // white
-const LIGHT_POSITION: [f32; 3] = [2.0, 2.0, 6.0];
-const LIGHT_RADIUS: f32 = 500.0;
-const LIGHT_INTENSITY: f32 = 10.0;
 
 #[derive(Clone, Debug)]
 pub enum GameState {
@@ -50,9 +46,10 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                 use genmesh::generators::Cube;
                 use genmesh::{MapToVertices, Triangulate, Vertices};
                 let vertices = Cube::new()
-                    .vertex(|v| PosNormTex {
+                    .vertex(|v| PosNormTangTex {
                         position: v.pos.into(),
                         normal: v.normal.into(),
+                        tangent: [0.1, 0.1, 0.1],
                         tex_coord: [0.1, 0.1],
                     })
                     .triangulate()
@@ -60,9 +57,10 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .collect::<Vec<_>>();
 
                 let plane_vertices = ::genmesh::generators::Plane::new()
-                    .vertex(|v| PosNormTex {
+                    .vertex(|v| PosNormTangTex {
                         position: v.pos.into(),
                         normal: v.normal.into(),
+                        tangent: [0.1, 0.1, 0.1],
                         tex_coord: [0.1, 0.1],
                     })
                     .triangulate()
@@ -82,14 +80,10 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                 );
 
                 let albedo = data.world.read_resource::<Loader>().load_from_data(
-                    [1.0, 0.0, 0.0, 1.0].into(),
+                    [1.0, 1.0, 1.0, 1.0].into(),
                     (),
                     &data.world.read_resource(),
                 );
-                let material = ::amethyst::renderer::Material {
-                    albedo,
-                    ..data.world.read_resource::<MaterialDefaults>().0.clone()
-                };
 
                 let plane_albedo = data.world.read_resource::<Loader>().load_from_data(
                     [0.4, 0.4, 0.4, 1.0].into(),
@@ -120,9 +114,6 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         let mut body_mut = physics_world.body_mut(rigid_handle);
                         match body_mut {
                             BodyMut::RigidBody(body) => {
-                                //let linear = Vector3::new(0.0, 50000.0, 50000.0);
-                                //let angular = Vector3::new(0.0, 5000.0, 0.0);
-                                //body.apply_force(&Force::new(linear, angular));
                                 body.set_linear_velocity(Vector3::new(0.0, -2.0, -0.2));
                                 body.set_angular_velocity(Vector3::new(0.0, 1.8, 3.5));
                             }
@@ -152,11 +143,20 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
 
                 {
                     data.world.exec(|mut creator: UiCreator| {
-                        let fps_entity = creator.create("resources/ui/fps.ron", ());
+                        creator.create("resources/ui/fps.ron", ());
                     })
                 }
 
-                let ui_transform = UiTransform::new("fps_text".to_owned(), Anchor::TopLeft, 100.0, 25.0, 1.0, 200.0, 50.0, 0);
+                let ui_transform = UiTransform::new(
+                    "fps_text".to_owned(),
+                    Anchor::TopLeft,
+                    100.0,
+                    25.0,
+                    1.0,
+                    200.0,
+                    50.0,
+                    0,
+                );
                 let ui_entity = data
                     .world
                     .create_entity()
@@ -167,11 +167,29 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
 
                 println!("ui_entity: {:?}", ui_entity);
 
+                let material_defaults = data.world.read_resource::<MaterialDefaults>().0.clone();
+                let metallic = [1.0, 1.0, 1.0].into();
+                let roughness = [0.6, 0.6, 0.6].into();
+                let (metallic, roughness) = {
+                    let loader = data.world.read_resource::<Loader>();
+                    let textures = &data.world.read_resource();
+
+                    let metallic = loader.load_from_data(metallic, (), textures);
+                    let roughness = loader.load_from_data(roughness, (), textures);
+
+                    (metallic, roughness)
+                };
+
                 let box_entity = data
                     .world
                     .create_entity()
                     .with(mesh)
-                    .with(material.clone())
+                    .with(::amethyst::renderer::Material {
+                        albedo: albedo.clone(),
+                        metallic: metallic.clone(),
+                        roughness: roughness.clone(),
+                        ..material_defaults.clone()
+                    })
                     .with(Transform {
                         translation: ::cgmath::Point3::new(0.0, 0.0, 0.0).to_vec(),
                         rotation: ::cgmath::Quaternion::<f32>::one(),
@@ -188,7 +206,12 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                 data.world
                     .create_entity()
                     .with(plane_mesh)
-                    .with(plane_material.clone())
+                    .with(::amethyst::renderer::Material {
+                        albedo: albedo.clone(),
+                        metallic: metallic.clone(),
+                        roughness: roughness.clone(),
+                        ..material_defaults.clone()
+                    })
                     .with(plane_transform)
                     .with(::systems::physics::Body3d {
                         handle: ground_handle,
@@ -206,29 +229,43 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .create_entity()
                     .with(::amethyst::controls::FlyControlTag)
                     .with(::systems::controller::FollowCameraTag { entity: box_entity })
-                    .with(Camera::standard_3d(500., 500.))
+                    .with(Camera::from(Projection::perspective(500. / 500., Deg(90.))))
                     .with(camera_transform)
                     .with(GlobalTransform::default())
                     .build();
 
+                let intensity = 4.0;
                 let light: Light = PointLight {
-                    radius: LIGHT_RADIUS,
-                    intensity: LIGHT_INTENSITY,
-                    color: POINT_LIGHT_COLOUR,
+                    radius: 1.0,
+                    intensity: intensity,
+                    color: Rgba(1.0, 0.6, 0.0, 1.0),
+                    smoothness: 0.0,
+                }.into();
+
+                let sun_light: Light = SunLight {
                     ..Default::default()
                 }.into();
 
                 let mut transform = Transform::default();
                 let mut global = GlobalTransform(transform.matrix());
-                transform.translation = LIGHT_POSITION.into();
-                //global.0 = transform.matrix();
+                transform.translation = [0.0, 0.0, 0.1].into();
 
                 let light_entity = data
                     .world
                     .create_entity()
                     .with(light)
+                    .with(FlickerLight::new(intensity))
                     .with(transform)
                     .with(global)
+                    .build();
+
+                let sun_light_entity = data
+                    .world
+                    .create_entity()
+                    .with(sun_light)
+                    //.with(FlickerLight::new(intensity))
+                    .with(Transform::default())
+                    .with(GlobalTransform::default())
                     .build();
 
                 println!("light entity: {:?}", light_entity);
