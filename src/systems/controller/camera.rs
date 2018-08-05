@@ -1,5 +1,4 @@
-
-use cgmath::{Deg, Vector3};
+use cgmath::{Deg, Euler, Quaternion, Rad, Vector3, Zero};
 use specs::prelude::*;
 
 use amethyst::controls::{FlyControlTag, WindowFocus};
@@ -63,8 +62,24 @@ impl<'a> System<'a> for FlyCameraSystem {
                     Event::DeviceEvent { ref event, .. } => match *event {
                         DeviceEvent::MouseMotion { delta: (x, y) } => {
                             for (transform, _) in (&mut transform, &tag).join() {
-                                transform.pitch_local(Deg((-1.0) * y as f32 * self.sensitivity_y));
                                 transform.roll_global(Deg((1.0) * x as f32 * self.sensitivity_x));
+
+                                let before_pitch = transform.rotation.clone();
+                                let local_pitch = Deg((-1.0) * y as f32 * self.sensitivity_y);
+                                transform.pitch_local(local_pitch);
+
+                                let rot_w = transform.rotation.s;
+                                let rot_x = transform.rotation.v.x;
+                                let rot_y = transform.rotation.v.y;
+                                let rot_z = transform.rotation.v.z;
+                                let pitch: Deg<f32> = Rad(f32::atan2(
+                                    2.0 * rot_x * rot_w + 2.0 * rot_y * rot_z,
+                                    1.0 - 2.0 * rot_x * rot_x - 2.0 * rot_z * rot_z,
+                                )).into();
+
+                                if pitch < Deg::zero() {
+                                    transform.rotation = before_pitch;
+                                }
                             }
                         }
                         _ => (),
