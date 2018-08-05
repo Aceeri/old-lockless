@@ -41,6 +41,7 @@ impl<'a> System<'a> for FollowCameraSystem {
     );
 
     fn run(&mut self, (globals, mut transforms, tags, input, time): Self::SystemData) {
+        println!("delta: {:?}", time.delta_seconds());
         if input.key_is_down(VirtualKeyCode::R) {
             for (mut restricted, tag) in (&mut transforms.restrict_mut(), &tags).join() {
                 let target = globals.get(tag.entity);

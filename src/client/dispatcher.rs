@@ -3,15 +3,16 @@ use std::borrow::Borrow;
 
 use amethyst::core::{Parent};
 use amethyst::renderer::{
-    AmbientColor, DrawShaded, Pipeline, PosNormTex, RenderSystem,
+    AmbientColor, DrawShaded, DrawShadedSeparate, Pipeline, PosNormTex, RenderSystem,
     Rgba, Stage, TextureFormat
 };
 use amethyst::input::{Bindings, InputSystem};
 use amethyst::audio::AudioFormat;
-use amethyst::ui::{FontAsset, FontFormat, UiButtonSystem, UiMouseSystem, UiTransformSystem, UiLoaderSystem, UiKeyboardSystem, ResizeSystem};
+use amethyst::ui::{DrawUi, FontAsset, FontFormat, UiButtonSystem, UiMouseSystem, UiTransformSystem, UiLoaderSystem, UiKeyboardSystem, ResizeSystem};
 use amethyst::prelude::*; 
 use amethyst::utils::fps_counter::FPSCounterSystem;
 use amethyst::assets::Processor;
+use amethyst::audio::Source;
 
 //use shred::{ParSeq, RunNow, RunWithPool};
 use shred::RunNow;
@@ -60,7 +61,9 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
-            .with_pass(DrawShaded::<PosNormTex>::new()),
+            .with_pass(DrawShaded::<PosNormTex>::new())
+            .with_pass(DrawShadedSeparate::new().with_vertex_skinning())
+            .with_pass(DrawUi::new())
     );
 
     let display_config = ::amethyst::renderer::DisplayConfig {
@@ -143,6 +146,7 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             "font_processor",
             &["ui_loader"],
         )
+        .with(Processor::<Source>::new(), "source_processor", &[])
         .with(
             UiKeyboardSystem::new(),
             "ui_keyboard_system",

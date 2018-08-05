@@ -15,8 +15,9 @@ use world::application::GameData;
 use cgmath::{Array, EuclideanSpace, One};
 use nalgebra::core::{Unit, Vector3};
 use ncollide3d::shape::{Cuboid, Plane, ShapeHandle};
-use nphysics3d::math::{Inertia, Isometry, Point};
+use nphysics3d::math::{Inertia, Isometry, Point, Force};
 use nphysics3d::object::{BodyHandle, BodyMut, Material};
+use nphysics3d::volumetric::Volumetric;
 
 use error::Error;
 
@@ -105,20 +106,25 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         .world
                         .write_resource::<::systems::physics::PhysicsWorld3d>();
                     physics_world.set_gravity(Vector3::z() * -9.807);
-                    let mut inertia = Inertia::zero();
-                    inertia.linear = 1.0;
+
+                    let cuboid = ShapeHandle::new(Cuboid::new(Vector3::new(1.0, 1.0, 1.0)));
+                    let local_inertia = cuboid.inertia(1.0);
+                    let local_center_of_mass = cuboid.center_of_mass();
                     let rigid_handle = physics_world.add_rigid_body(
                         Isometry::new(Vector3::new(0.0, 0.0, 50.0), Vector3::zeros()),
-                        inertia.clone(),
-                        Point::origin(),
+                        local_inertia,
+                        local_center_of_mass,
                     );
 
                     {
                         let mut body_mut = physics_world.body_mut(rigid_handle);
                         match body_mut {
                             BodyMut::RigidBody(body) => {
-                                body.set_linear_velocity(Vector3::new(0.0, 0.0, 0.0));
-                                body.set_angular_velocity(Vector3::new(0.0, 1.0, 0.0));
+                                //let linear = Vector3::new(0.0, 50000.0, 50000.0);
+                                //let angular = Vector3::new(0.0, 5000.0, 0.0);
+                                //body.apply_force(&Force::new(linear, angular));
+                                body.set_linear_velocity(Vector3::new(0.0, -2.0, -0.2));
+                                body.set_angular_velocity(Vector3::new(0.0, 1.8, 3.5));
                             }
                             _ => {}
                         }
@@ -135,7 +141,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
 
                     physics_world.add_collider(
                         0.0,
-                        ShapeHandle::new(Cuboid::new([1.0, 1.0, 1.0].into())),
+                        cuboid,
                         rigid_handle,
                         Isometry::identity(),
                         Material::default(),
@@ -150,13 +156,16 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     })
                 }
 
-                data
+                let ui_transform = UiTransform::new("fps_text".to_owned(), Anchor::TopLeft, 100.0, 25.0, 1.0, 200.0, 50.0, 0);
+                let ui_entity = data
                     .world
                     .create_entity()
-                    .with(UiTransform::new("fps_text".to_owned(), Anchor::TopLeft, 5.0, 5.0, 5.0, 500.0, 500.0, 0))
+                    .with(ui_transform)
                     //.with(UiText::new())
                     .with(FPSTag)
                     .build();
+
+                println!("ui_entity: {:?}", ui_entity);
 
                 let box_entity = data
                     .world
