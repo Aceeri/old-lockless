@@ -4,8 +4,7 @@ use amethyst::renderer::{
     ActiveCamera, Camera, Event, KeyboardInput, Light, MaterialDefaults, Mesh, PointLight,
     PosNormTex, Rgba, VirtualKeyCode, WindowEvent,
 };
-
-use amethyst::ui::UiCreator;
+use amethyst::ui::{UiTransform, UiText, UiCreator, Anchor};
 
 use amethyst::prelude::*;
 
@@ -20,6 +19,8 @@ use nphysics3d::math::{Inertia, Isometry, Point};
 use nphysics3d::object::{BodyHandle, BodyMut, Material};
 
 use error::Error;
+
+use systems::utils::fps_counter::FPSTag;
 
 const POINT_LIGHT_COLOUR: Rgba = Rgba(1.0, 1.0, 1.0, 1.0); // white
 const LIGHT_POSITION: [f32; 3] = [2.0, 2.0, 6.0];
@@ -116,8 +117,8 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         let mut body_mut = physics_world.body_mut(rigid_handle);
                         match body_mut {
                             BodyMut::RigidBody(body) => {
-                                body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
-                                body.set_angular_velocity(Vector3::new(0.0, 0.02, 0.0));
+                                body.set_linear_velocity(Vector3::new(0.0, 0.0, 0.0));
+                                body.set_angular_velocity(Vector3::new(0.0, 1.0, 0.0));
                             }
                             _ => {}
                         }
@@ -143,9 +144,19 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     (rigid_handle, ground_handle)
                 };
 
-                data.world.exec(|mut creator: UiCreator| {
-                    creator.create("ui/fps.ron", ());
-                });
+                {
+                    data.world.exec(|mut creator: UiCreator| {
+                        let fps_entity = creator.create("resources/ui/fps.ron", ());
+                    })
+                }
+
+                data
+                    .world
+                    .create_entity()
+                    .with(UiTransform::new("fps_text".to_owned(), Anchor::TopLeft, 5.0, 5.0, 5.0, 500.0, 500.0, 0))
+                    //.with(UiText::new())
+                    .with(FPSTag)
+                    .build();
 
                 let box_entity = data
                     .world

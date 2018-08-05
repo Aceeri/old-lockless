@@ -13,3 +13,6 @@ nphysics3d = "0.8"
 smallvec = "*"
 genmesh = "*"
 specs-hierarchy = { version = "0.2" }
+
+[features]
+nightly = ["amethyst/nightly"]
