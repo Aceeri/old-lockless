@@ -102,9 +102,17 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             &["input_system", "mouse_focus"],
         )
         .with(
+            ::systems::controller::FollowCameraSystem{
+                hover_distance: 30.0, 
+                speed: 5.0,
+            },
+            "follow_camera_system",
+            &[],
+        )
+        .with(
             ::amethyst::core::transform::TransformSystem::new(),
             "transform_system",
-            &["hierarchy_system_parent", "fly_system"],
+            &["hierarchy_system_parent"],
         )
         .with(
             ::systems::physics::HandleRemovalSystem3d::new(),

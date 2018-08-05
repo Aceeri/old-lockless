@@ -107,20 +107,20 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     let mut inertia = Inertia::zero();
                     inertia.linear = 1.0;
                     let rigid_handle = physics_world.add_rigid_body(
-                        Isometry::new(Vector3::new(0.0, 10.0, 0.0), Vector3::zeros()),
+                        Isometry::new(Vector3::new(0.0, 0.0, 50.0), Vector3::zeros()),
                         inertia.clone(),
                         Point::origin(),
                     );
 
                     //{
-                        //let mut body_mut = physics_world.body_mut(rigid_handle);
-                        //match body_mut {
-                            //BodyMut::RigidBody(body) => {
-                                //body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
-                                //body.set_angular_velocity(Vector3::new(0.0, 0.02, 0.0));
-                            //}
-                            //_ => {}
-                        //}
+                    //let mut body_mut = physics_world.body_mut(rigid_handle);
+                    //match body_mut {
+                    //BodyMut::RigidBody(body) => {
+                    //body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
+                    //body.set_angular_velocity(Vector3::new(0.0, 0.02, 0.0));
+                    //}
+                    //_ => {}
+                    //}
                     //}
 
                     let ground_handle = BodyHandle::ground();
@@ -143,12 +143,12 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     (rigid_handle, ground_handle)
                 };
 
-                data.world
+                let box_entity = data.world
                     .create_entity()
                     .with(mesh)
                     .with(material.clone())
                     .with(Transform {
-                        translation: ::cgmath::Point3::new(0., 0., 0.).to_vec(),
+                        translation: ::cgmath::Point3::new(0.0, 0.0, 0.0).to_vec(),
                         rotation: ::cgmath::Quaternion::<f32>::one(),
                         scale: ::cgmath::Vector3::from_value(1.),
                     })
@@ -180,6 +180,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .world
                     .create_entity()
                     .with(::amethyst::controls::FlyControlTag)
+                    .with(::systems::controller::FollowCameraTag {
+                        entity: box_entity,
+                    })
                     .with(Camera::standard_3d(500., 500.))
                     .with(camera_transform)
                     .with(GlobalTransform::default())
