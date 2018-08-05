@@ -4,11 +4,14 @@ use std::borrow::Borrow;
 use amethyst::core::{Parent};
 use amethyst::renderer::{
     AmbientColor, DrawShaded, Pipeline, PosNormTex, RenderSystem,
-    Rgba, Stage,
+    Rgba, Stage, TextureFormat
 };
-
 use amethyst::input::{Bindings, InputSystem};
-use amethyst::prelude::*;
+use amethyst::audio::AudioFormat;
+use amethyst::ui::{FontAsset, FontFormat, UiButtonSystem, UiMouseSystem, UiTransformSystem, UiLoaderSystem, UiKeyboardSystem, ResizeSystem};
+use amethyst::prelude::*; 
+use amethyst::utils::fps_counter::FPSCounterSystem;
+use amethyst::assets::Processor;
 
 //use shred::{ParSeq, RunNow, RunWithPool};
 use shred::RunNow;
@@ -66,7 +69,7 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
         dimensions: None,
         min_dimensions: None,
         max_dimensions: None,
-        vsync: true,
+        vsync: false,
         multisampling: 1,
         visibility: true,
     };
@@ -104,7 +107,8 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
         .with(
             ::systems::controller::FollowCameraSystem{
                 hover_distance: 30.0, 
-                speed: 5.0,
+                follow_speed: 5.0,
+                rotation_speed: 8.0,
             },
             "follow_camera_system",
             &[],
@@ -129,6 +133,39 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             "sync_body_3d",
             &["physics_step_3d"],
         )
+        .with(
+            UiLoaderSystem::<AudioFormat, TextureFormat, FontFormat>::default(),
+            "ui_loader",
+            &[],
+        )
+        .with(
+            Processor::<FontAsset>::new(),
+            "font_processor",
+            &["ui_loader"],
+        )
+        .with(
+            UiKeyboardSystem::new(),
+            "ui_keyboard_system",
+            &["font_processor"],
+        )
+        .with(ResizeSystem::new(), "ui_resize_system", &[])
+        .with(
+            UiTransformSystem::default(),
+            "ui_transform",
+            &["transform_system"],
+        )
+        .with(
+            UiMouseSystem::<String, String>::new(),
+            "ui_mouse_system",
+            &["ui_transform"],
+        )
+        .with(
+            UiButtonSystem::new(),
+            "ui_button_system",
+            &["ui_mouse_system"],
+        )
+        .with(FPSCounterSystem, "fps_counter_system", &[])
+        .with(::systems::utils::fps_counter::FPSRenderSystem, "fps_render_system", &[])
         .with_thread_local(render_system)
         .build();
 

@@ -15,7 +15,8 @@ impl Component for FollowCameraTag {
 
 pub struct FollowCameraSystem {
     pub hover_distance: f32,
-    pub speed: f32,
+    pub follow_speed: f32,
+    pub rotation_speed: f32,
 }
 
 fn linear_interpolate(from: f32, to: f32, amount: f32) -> f32 {
@@ -50,18 +51,14 @@ impl<'a> System<'a> for FollowCameraSystem {
                     camera_transform.translation = vector_interpolate(
                         camera_transform.translation,
                         target_vector,
-                        time.delta_seconds() * self.speed,
-                    );
-                    println!(
-                        "interpolating to {:?}",
-                        target_vector,
+                        time.delta_seconds() * self.follow_speed,
                     );
 
-                    camera_transform.rotation = <Transform as CgTransform<Point3<f32>>>::look_at(
+                    camera_transform.rotation = camera_transform.rotation.nlerp(<Transform as CgTransform<Point3<f32>>>::look_at(
                         Point3::new(0.0, 0.0, 0.0),
                         Point3::new(0.0, 0.0, 1.0),
                         Vector3::new(0.0, 1.0, 0.0),
-                    ).rotation;
+                    ).rotation, time.delta_seconds() * self.rotation_speed);
                 }
             }
         }

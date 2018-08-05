@@ -5,6 +5,8 @@ use amethyst::renderer::{
     PosNormTex, Rgba, VirtualKeyCode, WindowEvent,
 };
 
+use amethyst::ui::UiCreator;
+
 use amethyst::prelude::*;
 
 use machinae::{State, Trans};
@@ -15,7 +17,7 @@ use cgmath::{Array, EuclideanSpace, One};
 use nalgebra::core::{Unit, Vector3};
 use ncollide3d::shape::{Cuboid, Plane, ShapeHandle};
 use nphysics3d::math::{Inertia, Isometry, Point};
-use nphysics3d::object::{BodyHandle, Material};
+use nphysics3d::object::{BodyHandle, BodyMut, Material};
 
 use error::Error;
 
@@ -43,11 +45,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
         println!("{:?} starting", self);
         match *self {
             GameState::Loading => {
-                //use genmesh::generators::SphereUv;
                 use genmesh::generators::Cube;
                 use genmesh::{MapToVertices, Triangulate, Vertices};
                 let vertices = Cube::new()
-                //let vertices = SphereUv::new(50, 50)
                     .vertex(|v| PosNormTex {
                         position: v.pos.into(),
                         normal: v.normal.into(),
@@ -112,16 +112,16 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         Point::origin(),
                     );
 
-                    //{
-                    //let mut body_mut = physics_world.body_mut(rigid_handle);
-                    //match body_mut {
-                    //BodyMut::RigidBody(body) => {
-                    //body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
-                    //body.set_angular_velocity(Vector3::new(0.0, 0.02, 0.0));
-                    //}
-                    //_ => {}
-                    //}
-                    //}
+                    {
+                        let mut body_mut = physics_world.body_mut(rigid_handle);
+                        match body_mut {
+                            BodyMut::RigidBody(body) => {
+                                body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
+                                body.set_angular_velocity(Vector3::new(0.0, 0.02, 0.0));
+                            }
+                            _ => {}
+                        }
+                    }
 
                     let ground_handle = BodyHandle::ground();
                     physics_world.add_collider(
@@ -143,7 +143,12 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     (rigid_handle, ground_handle)
                 };
 
-                let box_entity = data.world
+                data.world.exec(|mut creator: UiCreator| {
+                    creator.create("ui/fps.ron", ());
+                });
+
+                let box_entity = data
+                    .world
                     .create_entity()
                     .with(mesh)
                     .with(material.clone())
@@ -180,9 +185,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .world
                     .create_entity()
                     .with(::amethyst::controls::FlyControlTag)
-                    .with(::systems::controller::FollowCameraTag {
-                        entity: box_entity,
-                    })
+                    .with(::systems::controller::FollowCameraTag { entity: box_entity })
                     .with(Camera::standard_3d(500., 500.))
                     .with(camera_transform)
                     .with(GlobalTransform::default())
