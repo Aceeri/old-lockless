@@ -5,13 +5,15 @@ use amethyst::renderer::{
     PosNormTex, Rgba, VirtualKeyCode, WindowEvent,
 };
 
+use amethyst::prelude::*;
+
 use machinae::{State, Trans};
 
 use world::application::GameData;
 
 use cgmath::{Array, EuclideanSpace, One};
 use nalgebra::core::{Unit, Vector3};
-use ncollide3d::shape::{Ball, Plane, ShapeHandle};
+use ncollide3d::shape::{Ball, Cuboid, Plane, ShapeHandle};
 use nphysics3d::math::{Inertia, Isometry, Point};
 use nphysics3d::object::{BodyHandle, BodyMut, Material};
 
@@ -41,9 +43,11 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
         println!("{:?} starting", self);
         match *self {
             GameState::Loading => {
-                use genmesh::generators::SphereUv;
+                //use genmesh::generators::SphereUv;
+                use genmesh::generators::Cube;
                 use genmesh::{MapToVertices, Triangulate, Vertices};
-                let vertices = SphereUv::new(50, 50)
+                let vertices = Cube::new()
+                //let vertices = SphereUv::new(50, 50)
                     .vertex(|v| PosNormTex {
                         position: v.pos.into(),
                         normal: v.normal.into(),
@@ -136,7 +140,8 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
 
                     physics_world.add_collider(
                         0.0,
-                        ShapeHandle::new(Ball::new(5.0)),
+                        //ShapeHandle::new(Ball::new(5.0)),
+                        ShapeHandle::new(Cuboid::new([2.5, 2.5, 2.5].into())),
                         rigid_handle,
                         Isometry::identity(),
                         Material {
@@ -176,15 +181,16 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(GlobalTransform::default())
                     .build();
 
+                let camera_transform = Transform {
+                    translation: ::cgmath::Vector3::new(0., 10., 20.0),
+                    rotation: ::cgmath::Quaternion::one(),
+                    scale: ::cgmath::Vector3::from_value(1.0),
+                };
                 let camera_entity = data
                     .world
                     .create_entity()
                     .with(Camera::standard_3d(500., 500.))
-                    .with(Transform {
-                        translation: ::cgmath::Vector3::new(0., 0., 20.0),
-                        rotation: ::cgmath::Quaternion::one(),
-                        scale: ::cgmath::Vector3::from_value(1.0),
-                    })
+                    .with(camera_transform)
                     .with(GlobalTransform::default())
                     .build();
 

@@ -110,6 +110,11 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             "sync_body_3d",
             &["physics_step_3d"],
         )
+        //.with(
+            //InputSystem::<AX, AC>::new(Bindings::load()),
+            //"input_system",
+            //&[],
+        //);
         .with_thread_local(render_system)
         .build();
 

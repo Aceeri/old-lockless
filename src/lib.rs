@@ -4,16 +4,15 @@ extern crate machinae;
 extern crate nalgebra;
 extern crate nphysics3d;
 extern crate ncollide3d;
-extern crate specs;
-extern crate shrev;
 extern crate rayon;
 extern crate smallvec;
 extern crate genmesh;
 extern crate specs_hierarchy;
-extern crate cgmath;
 
-//#[macro_use]
-extern crate shred;
+pub use amethyst::core::cgmath as cgmath;
+pub use amethyst::core::shrev as shrev;
+pub use amethyst::core::shred as shred;
+pub use amethyst::core::specs as specs;
 
 pub use world::application::Application;
 
