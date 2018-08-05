@@ -13,7 +13,7 @@ use world::application::GameData;
 
 use cgmath::{Array, EuclideanSpace, One};
 use nalgebra::core::{Unit, Vector3};
-use ncollide3d::shape::{Ball, Cuboid, Plane, ShapeHandle};
+use ncollide3d::shape::{Cuboid, Plane, ShapeHandle};
 use nphysics3d::math::{Inertia, Isometry, Point};
 use nphysics3d::object::{BodyHandle, BodyMut, Material};
 
@@ -103,51 +103,41 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     let mut physics_world = data
                         .world
                         .write_resource::<::systems::physics::PhysicsWorld3d>();
-                    //physics_world.set_gravity(Vector3::new(0.0, 0.0, -9.807));
-                    physics_world.set_gravity(Vector3::new(0.0, 0.0, -9.807));
+                    physics_world.set_gravity(Vector3::z() * -9.807);
                     let mut inertia = Inertia::zero();
                     inertia.linear = 1.0;
                     let rigid_handle = physics_world.add_rigid_body(
-                        Isometry::new(Vector3::new(-1.5, 0.0, 10.0), Vector3::zeros()),
+                        Isometry::new(Vector3::new(0.0, 10.0, 0.0), Vector3::zeros()),
                         inertia.clone(),
                         Point::origin(),
                     );
 
-                    {
-                        let mut body_mut = physics_world.body_mut(rigid_handle);
-                        match body_mut {
-                            BodyMut::RigidBody(body) => {
-                                body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
-                                body.set_angular_velocity(Vector3::new(0.0, 0.02, 0.0));
-                            }
-                            _ => {}
-                        }
-                    }
+                    //{
+                        //let mut body_mut = physics_world.body_mut(rigid_handle);
+                        //match body_mut {
+                            //BodyMut::RigidBody(body) => {
+                                //body.set_linear_velocity(Vector3::new(-1.0, 0.0, 2.0));
+                                //body.set_angular_velocity(Vector3::new(0.0, 0.02, 0.0));
+                            //}
+                            //_ => {}
+                        //}
+                    //}
 
                     let ground_handle = BodyHandle::ground();
                     physics_world.add_collider(
                         0.0,
-                        ShapeHandle::new(Plane::new(Unit::new_normalize(Vector3::new(
-                            0.0, 0.0, 1.0,
-                        )))),
+                        ShapeHandle::new(Plane::new(Unit::new_normalize(Vector3::z()))),
                         ground_handle,
                         Isometry::identity(),
-                        Material {
-                            restitution: 0.7,
-                            friction: 0.6,
-                        },
+                        Material::default(),
                     );
 
                     physics_world.add_collider(
                         0.0,
-                        //ShapeHandle::new(Ball::new(5.0)),
-                        ShapeHandle::new(Cuboid::new([2.5, 2.5, 2.5].into())),
+                        ShapeHandle::new(Cuboid::new([1.0, 1.0, 1.0].into())),
                         rigid_handle,
                         Isometry::identity(),
-                        Material {
-                            restitution: 0.3,
-                            friction: 0.8,
-                        },
+                        Material::default(),
                     );
 
                     (rigid_handle, ground_handle)
@@ -158,7 +148,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(mesh)
                     .with(material.clone())
                     .with(Transform {
-                        translation: ::cgmath::Point3::new(-3., 0., 5.).to_vec(),
+                        translation: ::cgmath::Point3::new(0., 0., 0.).to_vec(),
                         rotation: ::cgmath::Quaternion::<f32>::one(),
                         scale: ::cgmath::Vector3::from_value(1.),
                     })
@@ -169,7 +159,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .build();
 
                 let mut plane_transform = Transform::default();
-                plane_transform.scale = ::cgmath::Vector3::from_value(10000.0);
+                plane_transform.scale = ::cgmath::Vector3::from_value(1000.0);
                 data.world
                     .create_entity()
                     .with(plane_mesh)
@@ -182,13 +172,14 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .build();
 
                 let camera_transform = Transform {
-                    translation: ::cgmath::Vector3::new(0., 10., 20.0),
+                    translation: ::cgmath::Vector3::new(0., 0.0, 50.0),
                     rotation: ::cgmath::Quaternion::one(),
                     scale: ::cgmath::Vector3::from_value(1.0),
                 };
                 let camera_entity = data
                     .world
                     .create_entity()
+                    .with(::amethyst::controls::FlyControlTag)
                     .with(Camera::standard_3d(500., 500.))
                     .with(camera_transform)
                     .with(GlobalTransform::default())

@@ -1,3 +1,4 @@
+
 use std::borrow::Borrow;
 
 use amethyst::core::{Parent};
@@ -5,6 +6,9 @@ use amethyst::renderer::{
     AmbientColor, DrawShaded, Pipeline, PosNormTex, RenderSystem,
     Rgba, Stage,
 };
+
+use amethyst::input::{Bindings, InputSystem};
+use amethyst::prelude::*;
 
 //use shred::{ParSeq, RunNow, RunWithPool};
 use shred::RunNow;
@@ -56,19 +60,6 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             .with_pass(DrawShaded::<PosNormTex>::new()),
     );
 
-    //let par_seq = ParSeq::new(
-    ////par![
-    //seq![
-    //::specs_hierarchy::HierarchySystem::<Parent>::new(),
-    //::amethyst::core::transform::TransformSystem::new(),
-    //::systems::physics::HandleRemovalSystem3d::new(),
-    //::systems::physics::PhysicsStep3d::new(),
-    //::systems::physics::SyncBodySystem3d::new(),
-    //],
-    ////],
-    //p,
-    //);
-
     let display_config = ::amethyst::renderer::DisplayConfig {
         title: "Lockless".to_string(),
         fullscreen: false,
@@ -83,6 +74,11 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
     world.add_resource(AmbientColor(AMBIENT_LIGHT_COLOUR));
     let render_system =
         RenderSystem::build(pipe, Some(display_config)).map_err(|e| Error::Amethyst(e.into()))?;
+
+    let key_bindings_path = format!(
+        "{}/resources/input.ron",
+        env!("CARGO_MANIFEST_DIR")
+    );
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(
@@ -110,11 +106,21 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             "sync_body_3d",
             &["physics_step_3d"],
         )
-        //.with(
-            //InputSystem::<AX, AC>::new(Bindings::load()),
-            //"input_system",
-            //&[],
-        //);
+        .with(
+            InputSystem::<String, String>::new(Some(Bindings::load(key_bindings_path))),
+            "input_system",
+            &[],
+        )
+        .with(
+            ::systems::controller::FlyCameraSystem::new(5.0, 0.3, 0.3),
+            "fly_system",
+            &["input_system"],
+        )
+        .with(
+            ::amethyst::controls::MouseFocusUpdateSystem::new(),
+            "mouse_focus",
+            &[],
+        )
         .with_thread_local(render_system)
         .build();
 
