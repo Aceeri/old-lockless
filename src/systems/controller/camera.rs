@@ -64,7 +64,7 @@ impl<'a> System<'a> for FlyCameraSystem {
                         DeviceEvent::MouseMotion { delta: (x, y) } => {
                             for (transform, _) in (&mut transform, &tag).join() {
                                 transform.pitch_local(Deg((-1.0) * y as f32 * self.sensitivity_y));
-                                transform.yaw_local(Deg((-1.0) * x as f32 * self.sensitivity_x));
+                                transform.roll_global(Deg((1.0) * x as f32 * self.sensitivity_x));
                             }
                         }
                         _ => (),
