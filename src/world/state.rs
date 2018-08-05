@@ -15,7 +15,7 @@ use cgmath::{Array, EuclideanSpace, One};
 use nalgebra::core::{Unit, Vector3};
 use ncollide3d::shape::{Cuboid, Plane, ShapeHandle};
 use nphysics3d::math::{Inertia, Isometry, Point};
-use nphysics3d::object::{BodyHandle, BodyMut, Material};
+use nphysics3d::object::{BodyHandle, Material};
 
 use error::Error;
 

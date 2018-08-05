@@ -1,10 +1,10 @@
-use cgmath::{Deg, Euler, Quaternion, Rad, Vector3, Zero};
+use cgmath::{Deg, Rad, Vector3, Zero};
 use specs::prelude::*;
 
 use amethyst::controls::{FlyControlTag, WindowFocus};
 use amethyst::core::{timing::Time, Transform};
 use amethyst::input::InputHandler;
-use amethyst::winit::{DeviceEvent, Event};
+use amethyst::winit::{DeviceEvent, Event, MouseButton};
 use shrev::EventChannel;
 
 /// The system that manages the view rotation.
@@ -57,7 +57,7 @@ impl<'a> System<'a> for FlyCameraSystem {
         let focused = focus.is_focused;
 
         for event in events.read(&mut self.event_reader.as_mut().unwrap()) {
-            if focused {
+            if focused && input.mouse_button_is_down(MouseButton::Right) {
                 match *event {
                     Event::DeviceEvent { ref event, .. } => match *event {
                         DeviceEvent::MouseMotion { delta: (x, y) } => {

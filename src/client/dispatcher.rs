@@ -87,9 +87,24 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             &[],
         )
         .with(
+            InputSystem::<String, String>::new(Some(Bindings::load(key_bindings_path))),
+            "input_system",
+            &[],
+        )
+        .with(
+            ::amethyst::controls::MouseFocusUpdateSystem::new(),
+            "mouse_focus",
+            &[],
+        )
+        .with(
+            ::systems::controller::FlyCameraSystem::new(5.0, 0.3, 0.3),
+            "fly_system",
+            &["input_system", "mouse_focus"],
+        )
+        .with(
             ::amethyst::core::transform::TransformSystem::new(),
             "transform_system",
-            &["hierarchy_system_parent"],
+            &["hierarchy_system_parent", "fly_system"],
         )
         .with(
             ::systems::physics::HandleRemovalSystem3d::new(),
@@ -105,21 +120,6 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             ::systems::physics::SyncBodySystem3d::new(),
             "sync_body_3d",
             &["physics_step_3d"],
-        )
-        .with(
-            InputSystem::<String, String>::new(Some(Bindings::load(key_bindings_path))),
-            "input_system",
-            &[],
-        )
-        .with(
-            ::systems::controller::FlyCameraSystem::new(5.0, 0.3, 0.3),
-            "fly_system",
-            &["input_system"],
-        )
-        .with(
-            ::amethyst::controls::MouseFocusUpdateSystem::new(),
-            "mouse_focus",
-            &[],
         )
         .with_thread_local(render_system)
         .build();
