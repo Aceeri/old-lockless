@@ -16,47 +16,15 @@ use amethyst::ui::{
 };
 use amethyst::utils::fps_counter::FPSCounterSystem;
 
-//use shred::{ParSeq, RunNow, RunWithPool};
 use shred::RunNow;
 use shrev::EventChannel;
 use specs::prelude::*;
-
-//use smallvec::SmallVec;
 
 use rayon::ThreadPool;
 
 use error::Error;
 
 const AMBIENT_LIGHT_COLOUR: Rgba = Rgba(0.002, 0.002, 0.002, 1.0); // near-black
-                                                                   //const AMBIENT_LIGHT_COLOUR: Rgba = Rgba(1.0, 0.2, 0.2, 1.0); // near-black
-
-//pub type ThreadLocal<'a> = SmallVec<[Box<for<'b> RunNow<'b> + 'a>; 4]>;
-//pub struct ClientDispatcher<'a, P, R> {
-//par_seq: ParSeq<P, R>,
-//thread_local: ThreadLocal<'a>,
-//}
-
-//impl<'a, 'b, P, R> RunNow<'a> for ClientDispatcher<'b, P, R>
-//where
-//P: Borrow<ThreadPool>,
-//R: for<'c> RunWithPool<'c>,
-//{
-//fn run_now(&mut self, res: &Resources) {
-//ParSeq::dispatch(&mut self.par_seq, res);
-
-//for sys in &mut self.thread_local {
-//sys.run_now(res);
-//}
-//}
-
-//fn setup(&mut self, res: &mut Resources) {
-//ParSeq::setup(&mut self.par_seq, res);
-
-//for sys in &mut self.thread_local {
-//sys.setup(res);
-//}
-//}
-//}
 
 pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
     world: &mut World,
@@ -185,20 +153,9 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
         .with_thread_local(render_system)
         .build();
 
-    //let mut thread_local = ThreadLocal::new();
-    //thread_local.push(Box::new(render_system));
-
-    //let mut client_dispatcher = ClientDispatcher {
-    //par_seq,
-    //thread_local,
-    //};
-    //client_dispatcher.setup(&mut world.res);
-    //dispatcher_builder.add_thread_local(render_system);
-
-    //let mut dispatcher = dispatcher_builder.build();
     dispatcher.setup(&mut world.res);
 
-    println!("client dispatcher created");
+    info!("client dispatcher created");
     Ok(Box::new(dispatcher))
 }
 

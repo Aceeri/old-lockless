@@ -95,7 +95,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                 //..data.world.read_resource::<MaterialDefaults>().0.clone()
                 //};
 
-                let (rigid_handle, ground_handle) = {
+                let (rigid_handle, cuboid_collider, ground_handle, ground_collider) = {
                     let mut physics_world = data
                         .world
                         .write_resource::<::systems::physics::PhysicsWorld3d>();
@@ -122,7 +122,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     }
 
                     let ground_handle = BodyHandle::ground();
-                    physics_world.add_collider(
+                    let ground_collider = physics_world.add_collider(
                         0.0,
                         ShapeHandle::new(Plane::new(Unit::new_normalize(Vector3::z()))),
                         ground_handle,
@@ -130,7 +130,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         Material::default(),
                     );
 
-                    physics_world.add_collider(
+                    let cuboid_collider = physics_world.add_collider(
                         0.0,
                         cuboid,
                         rigid_handle,
@@ -138,7 +138,12 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                         Material::default(),
                     );
 
-                    (rigid_handle, ground_handle)
+                    (
+                        rigid_handle,
+                        cuboid_collider,
+                        ground_handle,
+                        ground_collider,
+                    )
                 };
 
                 {
@@ -185,6 +190,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(::systems::physics::Body3d {
                         handle: rigid_handle,
                     })
+                    .with(::systems::physics::Collider3d {
+                        handle: cuboid_collider,
+                    })
                     .with(GlobalTransform::default())
                     .build();
 
@@ -203,6 +211,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(::systems::physics::Body3d {
                         handle: ground_handle,
                     })
+                    .with(::systems::physics::Collider3d {
+                        handle: ground_collider,
+                    })
                     .with(GlobalTransform::default())
                     .build();
 
@@ -218,9 +229,7 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(::systems::controller::FollowCameraTag { entity: box_entity })
                     .with(Camera::from(Projection::perspective(500. / 500., Deg(90.))))
                     .with(camera_transform)
-                    .with(::systems::controller::CameraResize {
-                        fov: 90.0,
-                    })
+                    .with(::systems::controller::CameraResize { fov: 90.0 })
                     .with(GlobalTransform::default())
                     .build();
 
