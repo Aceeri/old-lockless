@@ -154,29 +154,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     }
                 }
 
-                //let ui_transform = UiTransform::new(
-                //"fps_text".to_owned(),
-                //Anchor::TopLeft,
-                //100.0,
-                //25.0,
-                //1.0,
-                //200.0,
-                //50.0,
-                //0,
-                //);
-                //let ui_entity = data
-                //.world
-                //.create_entity()
-                //.with(ui_transform)
-                ////.with(UiText::new())
-                //.with(FPSTag)
-                //.build();
-
-                //info!("ui_entity: {:?}", ui_entity);
-
                 let material_defaults = data.world.read_resource::<MaterialDefaults>().0.clone();
                 let metallic = [1.0, 1.0, 1.0].into();
-                let roughness = [0.6, 0.6, 0.6].into();
+                let roughness = [0.8, 0.8, 0.8].into();
                 let (metallic, roughness) = {
                     let loader = data.world.read_resource::<Loader>();
                     let textures = &data.world.read_resource();
@@ -238,6 +218,9 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(::systems::controller::FollowCameraTag { entity: box_entity })
                     .with(Camera::from(Projection::perspective(500. / 500., Deg(90.))))
                     .with(camera_transform)
+                    .with(::systems::controller::CameraResize {
+                        fov: 90.0,
+                    })
                     .with(GlobalTransform::default())
                     .build();
 

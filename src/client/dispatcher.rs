@@ -180,6 +180,7 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             "light_flicker",
             &[],
         )
+        .with(::systems::controller::CameraResizeSystem::default(), "camera_resize_system", &[])
         .with(UiEventHandlerSystem::new(), "ui_event_handler_system", &[])
         .with_thread_local(render_system)
         .build();
