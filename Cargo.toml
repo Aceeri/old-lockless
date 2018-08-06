@@ -14,6 +14,9 @@ smallvec = "*"
 genmesh = "*"
 specs-hierarchy = { version = "0.2" }
 rand = "*"
+fern = { version = "0.5", features = ["colored"] }
+log = "0.4"
 
 [features]
 nightly = ["amethyst/nightly"]
+

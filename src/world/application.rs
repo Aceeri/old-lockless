@@ -36,6 +36,8 @@ pub struct Application {
 
 impl Application {
     pub fn new_client<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        ::amethyst::start_logger(::amethyst::LoggerConfig::default());
+
         let thread_pool_builder = ThreadPoolBuilder::new();
         let pool = thread_pool_builder
             .build()

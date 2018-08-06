@@ -11,13 +11,14 @@ use amethyst::renderer::{
     TextureFormat,
 };
 use amethyst::ui::{
-    DrawUi, FontAsset, FontFormat, ResizeSystem, UiButtonSystem, UiKeyboardSystem, UiLoaderSystem,
+    UiEvent, DrawUi, FontAsset, FontFormat, ResizeSystem, UiButtonSystem, UiKeyboardSystem, UiLoaderSystem,
     UiMouseSystem, UiTransformSystem,
 };
 use amethyst::utils::fps_counter::FPSCounterSystem;
 
 //use shred::{ParSeq, RunNow, RunWithPool};
 use shred::RunNow;
+use shrev::EventChannel;
 use specs::prelude::*;
 
 //use smallvec::SmallVec;
@@ -65,7 +66,7 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
             .with_pass(DrawPbm::<PosNormTangTex>::new())
-            .with_pass(DrawPbmSeparate::new().with_vertex_skinning())
+            //.with_pass(DrawPbmSeparate::new().with_vertex_skinning())
             .with_pass(DrawUi::new()),
     );
 
@@ -179,6 +180,7 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
             "light_flicker",
             &[],
         )
+        .with(UiEventHandlerSystem::new(), "ui_event_handler_system", &[])
         .with_thread_local(render_system)
         .build();
 
@@ -197,4 +199,28 @@ pub fn dispatcher<P: 'static + Borrow<ThreadPool>>(
 
     println!("client dispatcher created");
     Ok(Box::new(dispatcher))
+}
+
+/// This shows how to handle UI events.
+pub struct UiEventHandlerSystem {
+    reader_id: Option<ReaderId<UiEvent>>,
+}
+
+impl UiEventHandlerSystem {
+    pub fn new() -> Self {
+        UiEventHandlerSystem { reader_id: None }
+    }
+}
+
+impl<'a> System<'a> for UiEventHandlerSystem {
+    type SystemData = Write<'a, EventChannel<UiEvent>>;
+
+    fn run(&mut self, mut events: Self::SystemData) {
+        if self.reader_id.is_none() {
+            self.reader_id = Some(events.register_reader());
+        }
+        for ev in events.read(self.reader_id.as_mut().unwrap()) {
+            info!("You just interacted with a ui element: {:?}", ev);
+        }
+    }
 }

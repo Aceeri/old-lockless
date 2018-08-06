@@ -2,7 +2,7 @@ use amethyst::assets::{Handle, Loader};
 use amethyst::core::{GlobalTransform, Transform};
 use amethyst::renderer::{
     ActiveCamera, Camera, Event, KeyboardInput, Light, MaterialDefaults, Mesh, PointLight,
-    PosNormTangTex, Projection, Rgba, SunLight, VirtualKeyCode, WindowEvent,
+    PosNormTangTex, Projection, Rgba, SpotLight, SunLight, VirtualKeyCode, WindowEvent,
 };
 use amethyst::ui::{Anchor, UiCreator, UiTransform};
 
@@ -40,7 +40,7 @@ impl GameState {
 
 impl<'a> State<&'a mut GameData, Error, Event> for GameState {
     fn start(&mut self, data: &mut GameData) -> Result<Trans<Self>, Error> {
-        println!("{:?} starting", self);
+        info!("{:?} starting", self);
         match *self {
             GameState::Loading => {
                 use genmesh::generators::Cube;
@@ -85,15 +85,15 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     &data.world.read_resource(),
                 );
 
-                let plane_albedo = data.world.read_resource::<Loader>().load_from_data(
-                    [0.4, 0.4, 0.4, 1.0].into(),
-                    (),
-                    &data.world.read_resource(),
-                );
-                let plane_material = ::amethyst::renderer::Material {
-                    albedo: plane_albedo,
-                    ..data.world.read_resource::<MaterialDefaults>().0.clone()
-                };
+                //let plane_albedo = data.world.read_resource::<Loader>().load_from_data(
+                //[0.4, 0.4, 0.4, 1.0].into(),
+                //(),
+                //&data.world.read_resource(),
+                //);
+                //let plane_material = ::amethyst::renderer::Material {
+                //albedo: plane_albedo,
+                //..data.world.read_resource::<MaterialDefaults>().0.clone()
+                //};
 
                 let (rigid_handle, ground_handle) = {
                     let mut physics_world = data
@@ -142,30 +142,37 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                 };
 
                 {
+                    let mut fps_entity = None;
                     data.world.exec(|mut creator: UiCreator| {
-                        creator.create("resources/ui/fps.ron", ());
-                    })
+                        fps_entity = Some(creator.create("resources/ui/fps.ron", ()));
+                    });
+
+                    if let Some(fps_entity) = fps_entity {
+                        data.world
+                            .write_storage::<FPSTag>()
+                            .insert(fps_entity, FPSTag);
+                    }
                 }
 
-                let ui_transform = UiTransform::new(
-                    "fps_text".to_owned(),
-                    Anchor::TopLeft,
-                    100.0,
-                    25.0,
-                    1.0,
-                    200.0,
-                    50.0,
-                    0,
-                );
-                let ui_entity = data
-                    .world
-                    .create_entity()
-                    .with(ui_transform)
-                    //.with(UiText::new())
-                    .with(FPSTag)
-                    .build();
+                //let ui_transform = UiTransform::new(
+                //"fps_text".to_owned(),
+                //Anchor::TopLeft,
+                //100.0,
+                //25.0,
+                //1.0,
+                //200.0,
+                //50.0,
+                //0,
+                //);
+                //let ui_entity = data
+                //.world
+                //.create_entity()
+                //.with(ui_transform)
+                ////.with(UiText::new())
+                //.with(FPSTag)
+                //.build();
 
-                println!("ui_entity: {:?}", ui_entity);
+                //info!("ui_entity: {:?}", ui_entity);
 
                 let material_defaults = data.world.read_resource::<MaterialDefaults>().0.clone();
                 let metallic = [1.0, 1.0, 1.0].into();
@@ -242,10 +249,6 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     smoothness: 0.0,
                 }.into();
 
-                let sun_light: Light = SunLight {
-                    ..Default::default()
-                }.into();
-
                 let mut transform = Transform::default();
                 let mut global = GlobalTransform(transform.matrix());
                 transform.translation = [0.0, 0.0, 0.1].into();
@@ -259,26 +262,15 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
                     .with(global)
                     .build();
 
-                let sun_light_entity = data
-                    .world
-                    .create_entity()
-                    .with(sun_light)
-                    //.with(FlickerLight::new(intensity))
-                    .with(Transform::default())
-                    .with(GlobalTransform::default())
-                    .build();
-
-                println!("light entity: {:?}", light_entity);
-
                 data.world.add_resource(ActiveCamera {
                     entity: camera_entity,
                 });
 
-                println!("{:?} switching to {:?}", self, GameState::Menu);
+                info!("{:?} switching to {:?}", self, GameState::Menu);
                 Ok(Trans::Switch(GameState::Menu))
             }
             GameState::Menu => {
-                println!("{:?} switching to {:?}", self, GameState::Running);
+                info!("{:?} switching to {:?}", self, GameState::Running);
                 Ok(Trans::Switch(GameState::Running))
             }
             GameState::Running => Ok(Trans::None),
@@ -311,14 +303,14 @@ impl<'a> State<&'a mut GameData, Error, Event> for GameState {
     }
 
     fn resume(&mut self, _args: &mut GameData) {
-        println!("{:?} resumed", self);
+        info!("{:?} resumed", self);
     }
 
     fn pause(&mut self, _args: &mut GameData) {
-        println!("{:?} paused", self);
+        info!("{:?} paused", self);
     }
 
     fn stop(&mut self, _args: &mut GameData) {
-        println!("{:?} stopping", self);
+        info!("{:?} stopping", self);
     }
 }

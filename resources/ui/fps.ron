@@ -3,17 +3,17 @@ Text(
     transform: (
         id: "fps_text",
         anchor: TopLeft,
-        x: 100.,
-        y: 25.,
+        x: 101.,
+        y: 26.,
         z: 1.,
         width: 200.,
         height: 50.,
         transparent: true,
     ),
     text: (
-        text: "N/A",
-        font_size: 25.,
-        color: (1., 1., 1., 1.),
-        font: File("font/square.ttf", Ttf, ()),
+        text: "FPS: Missing",
+        font_size: 12.,
+        color: (0.7, 0.7, 0.7, 1.),
+        font: File("resources/font/Hack-Regular.ttf", Ttf, ()),
     ),
 )

@@ -9,6 +9,9 @@ extern crate smallvec;
 extern crate genmesh;
 extern crate specs_hierarchy;
 extern crate rand;
+extern crate fern;
+#[macro_use]
+extern crate log;
 
 pub use amethyst::core::cgmath as cgmath;
 pub use amethyst::core::shrev as shrev;
