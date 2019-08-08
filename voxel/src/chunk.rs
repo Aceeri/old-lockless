@@ -23,13 +23,6 @@ pub struct LocalBlockPosition {
     z: usize,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct P {
-    x: isize,
-    y: isize,
-    z: isize,
-}
-
 impl LocalBlockPosition {
     pub fn new(x: usize, y: usize, z: usize) -> Option<LocalBlockPosition> {
         if x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_LENGTH {
@@ -39,42 +32,53 @@ impl LocalBlockPosition {
         Some(LocalBlockPosition { x, y, z })
     }
 
-    pub fn index(&self) -> usize {
-        chunk_index(self.x, self.y, self.z)
+    pub fn unchecked_new(x: usize, y: usize, z: usize) -> LocalBlockPosition {
+        LocalBlockPosition { x, y, z }
     }
 
-    pub fn surrounding(&self) -> [Option<LocalBlockPosition>; 6] {
-        let mut positions = [
-            LocalBlockPosition::new(self.x + 1, self.y, self.z),
-            LocalBlockPosition::new(self.x, self.y + 1, self.z),
-            LocalBlockPosition::new(self.x, self.y, self.z + 1),
-            None,
-            None,
-            None,
-        ];
+    pub fn index(&self) -> usize {
+        chunk_index(self.x as usize, self.y as usize, self.z as usize)
+    }
 
-        if self.x != 0 {
-            positions[3] = LocalBlockPosition::new(self.x - 1, self.y, self.z);
+    pub fn possible_surrounding(&self) -> [LocalBlockPosition; 6] {
+        [
+            LocalBlockPosition { x: self.x + 1, y: self.y, z: self.z },
+            LocalBlockPosition { x: self.x, y: self.y + 1, z: self.z },
+            LocalBlockPosition { x: self.x, y: self.y, z: self.z + 1 },
+            LocalBlockPosition { x: self.x - 1, y: self.y, z: self.z },
+            LocalBlockPosition { x: self.x, y: self.y - 1, z: self.z },
+            LocalBlockPosition { x: self.x, y: self.y, z: self.z - 1 },
+        ]
+    }
+
+    pub fn surrounding(&self) -> (usize, [LocalBlockPosition; 6]) {
+        let mut positions = self.possible_surrounding();
+        let mut valid = 0b0011_1111;
+        if self.x + 1 >= CHUNK_WIDTH {
+            valid |= 0b0000_0001;
         }
-        if self.y != 0 {
-            positions[4] = LocalBlockPosition::new(self.x, self.y - 1, self.z);
-        }
-        if self.z != 0 {
-            positions[5] = LocalBlockPosition::new(self.x, self.y, self.z - 1);
+
+        if self.y + 1 >= CHUNK_HEIGHT {
+            valid |= 0b0000_0010;
         }
 
-        //println!("{:?}", [
-            //P { x: self.x as isize + 1 as isize, y: self.y as isize, z: self.z as isize },
-            //P { x: self.x as isize, y: self.y as isize + 1 as isize, z: self.z as isize },
-            //P { x: self.x as isize, y: self.y as isize, z: self.z as isize + 1 as isize },
-            //P { x: self.x as isize - 1 as isize, y: self.y as isize, z: self.z as isize },
-            //P { x: self.x as isize, y: self.y as isize - 1 as isize, z: self.z as isize },
-            //P { x: self.x as isize, y: self.y as isize, z: self.z as isize - 1 as isize },
-        //]);
+        if self.z + 1 >= CHUNK_LENGTH {
+            valid |= 0b0000_0100;
+        }
 
-        //println!("{:?}", positions);
+        if self.x == 0 {
+            valid |= 0b0000_1000;
+        }
 
-        positions
+        if self.y == 0 {
+            valid |= 0b0001_0000;
+        }
+
+        if self.z == 0 {
+            valid |= 0b0010_0000;
+        }
+
+        (valid, positions)
     }
 
     //pub fn from_index(index: usize) -> Option<LocalBlockPosition> {
@@ -101,7 +105,7 @@ pub struct BoxedChunk {
 impl BoxedChunk {
     pub fn empty() -> BoxedChunk {
         BoxedChunk {
-            blocks: vec![EMPTY_BLOCK; CHUNK_SIZE].into_boxed_slice(),
+            blocks: vec![EMPTY_BLOCK; CHUNK_SIZE as usize].into_boxed_slice(),
         }
     }
 
@@ -114,13 +118,13 @@ impl BoxedChunk {
 
 impl Chunk for BoxedChunk {
     fn block(&self, position: &LocalBlockPosition) -> Block {
-        self.blocks[position.index()]
+        self.blocks[position.index() as usize]
     }
 }
 
 impl ChunkMut for BoxedChunk {
     fn set_block(&mut self, position: &LocalBlockPosition, block: Block) {
-        self.blocks[position.index()] = block;
+        self.blocks[position.index() as usize] = block;
     }
 }
 
@@ -131,7 +135,7 @@ pub struct ChunkRef<'a> {
 
 impl<'a> Chunk for ChunkRef<'a> {
     fn block(&self, position: &LocalBlockPosition) -> Block {
-        self.blocks[position.index()]
+        self.blocks[position.index() as usize]
     }
 }
 
@@ -206,9 +210,9 @@ mod test {
     }
 
     should_panic! {
-        x_out_of_bounds => { LocalBlockPosition::new(CHUNK_WIDTH, 0, 0).unwrap(); },
-        y_out_of_bounds => { LocalBlockPosition::new(0, CHUNK_HEIGHT, 0).unwrap(); },
-        z_out_of_bounds => { LocalBlockPosition::new(0, 0, CHUNK_LENGTH).unwrap(); }
+        x_out_of_bounds => { LocalBlockPosition::new(CHUNK_WIDTH as usize, 0, 0).unwrap(); },
+        y_out_of_bounds => { LocalBlockPosition::new(0, CHUNK_HEIGHT as usize, 0).unwrap(); },
+        z_out_of_bounds => { LocalBlockPosition::new(0, 0, CHUNK_LENGTH as usize).unwrap(); }
     }
 
     #[test]
@@ -237,7 +241,9 @@ mod test {
         }
 
         fn surrounding_count(position: LocalBlockPosition) -> usize {
-            position.surrounding().iter().filter_map(|p| p.as_ref()).count()
+            let (valid, positions) = position.surrounding();
+            positions.len()
+            //position.surrounding().iter().filter_map(|p| p.as_ref()).count()
         }
 
         let mut coverage = SurroundingCoverage { set: HashSet::new(), };
@@ -316,4 +322,3 @@ mod test {
         }
     }
 }
-
