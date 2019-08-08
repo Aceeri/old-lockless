@@ -192,6 +192,35 @@ mod test {
         }
     }
 
+    macro_rules! should_panic {
+        ($($name:ident => $block:block),*) => {
+            $(
+                #[test]
+                #[should_panic]
+                fn $name() {
+                    let () = $block;
+                }
+            )*
+        }
+    }
+
+    should_panic! {
+        x_out_of_bounds => { LocalBlockPosition::new(CHUNK_WIDTH, 0, 0).unwrap(); },
+        y_out_of_bounds => { LocalBlockPosition::new(0, CHUNK_HEIGHT, 0).unwrap(); },
+        z_out_of_bounds => { LocalBlockPosition::new(0, 0, CHUNK_LENGTH).unwrap(); }
+    }
+
+    #[test]
+    fn valid_positions() {
+        for x in 0..CHUNK_WIDTH {
+            for y in 0..CHUNK_HEIGHT {
+                for z in 0..CHUNK_LENGTH {
+                    LocalBlockPosition::new(x, y, z).unwrap();
+                }
+            }
+        }
+    }
+
     #[test]
     fn surrounding_positions() {
         fn assert_surrounding(position: (usize, usize, usize), count: usize) {
