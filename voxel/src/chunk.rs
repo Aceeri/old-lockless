@@ -1,5 +1,5 @@
 
-use crate::block::{Block, BlockSize, EMPTY_BLOCK};
+use crate::block::{Block, BlockSize, EMPTY_BLOCK, BlockRegistry, BlockDeclaration};
 
 pub const CHUNK_HEIGHT: usize = 64; // Y
 pub const CHUNK_WIDTH: usize = 64; // X
@@ -91,14 +91,79 @@ impl LocalBlockPosition {
 
 pub trait Chunk {
     fn block(&self, position: &LocalBlockPosition) -> Block;
-    // An active block is defined as any block that is surrounded by at least 1 non-opaque block.
-    //fn active(&self, position: &LocalBlockPosition) -> bool;
+    fn visible_blocks<'a>(&self, registry: &'a BlockRegistry) -> Vec<(LocalBlockPosition, &'a BlockDeclaration)> {
+        let mut visible = Vec::new();
+
+        for y in 0..CHUNK_HEIGHT {
+            for x in 0..CHUNK_WIDTH {
+                for z in 0..CHUNK_LENGTH {
+                    let position = LocalBlockPosition::unchecked_new(x, y, z);
+                    let block = self.block(&position);
+                    let declaration = registry.declaration(block).as_ref().unwrap();
+
+                    if declaration.visible() {
+                        if position.x == 0
+                            || position.y == 0
+                            || position.z == 0
+                            || position.x == CHUNK_WIDTH - 1
+                            || position.y == CHUNK_HEIGHT - 1
+                            || position.z == CHUNK_LENGTH - 1
+                        {
+                            visible.push((position, declaration));
+                            continue
+                        }
+
+                        // Check z axis first because of cache locality.
+                        let mut total_transparency: usize = 0;
+                        let check_block = self.block(&LocalBlockPosition::unchecked_new(x, y, z - 1));
+                        let check_declaration = registry.declaration(check_block);
+                        total_transparency += check_declaration.as_ref().unwrap().transparency() as usize;
+                        let check_block = self.block(&LocalBlockPosition::unchecked_new(x, y, z + 1));
+                        let check_declaration = registry.declaration(check_block);
+                        total_transparency += check_declaration.as_ref().unwrap().transparency() as usize;
+
+                        if total_transparency > 0 {
+                            visible.push((position, declaration));
+                            continue;
+                        }
+
+                        let check_block = self.block(&LocalBlockPosition::unchecked_new(x - 1, y, z));
+                        let check_declaration = registry.declaration(check_block);
+                        total_transparency += check_declaration.as_ref().unwrap().transparency() as usize;
+
+                        let check_block = self.block(&LocalBlockPosition::unchecked_new(x + 1, y, z));
+                        let check_declaration = registry.declaration(check_block);
+                        total_transparency += check_declaration.as_ref().unwrap().transparency() as usize;
+                        if total_transparency > 0 {
+                            visible.push((position, declaration));
+                            continue;
+                        }
+
+                        let check_block = self.block(&LocalBlockPosition::unchecked_new(x, y - 1, z));
+                        let check_declaration = registry.declaration(check_block);
+                        total_transparency += check_declaration.as_ref().unwrap().transparency() as usize;
+
+                        let check_block = self.block(&LocalBlockPosition::unchecked_new(x, y + 1, z));
+                        let check_declaration = registry.declaration(check_block);
+                        total_transparency += check_declaration.as_ref().unwrap().transparency() as usize;
+                        if total_transparency > 0 {
+                            visible.push((position, declaration));
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        visible
+    }
 }
 
 pub trait ChunkMut {
     fn set_block(&mut self, position: &LocalBlockPosition, block: Block);
 }
 
+#[derive(Debug)]
 pub struct BoxedChunk {
     blocks: Box<[Block]>,
 }
@@ -108,6 +173,17 @@ impl BoxedChunk {
         BoxedChunk {
             blocks: vec![EMPTY_BLOCK; CHUNK_SIZE as usize].into_boxed_slice(),
         }
+    }
+
+    pub fn flat(block: Block, y: usize) -> BoxedChunk {
+        let mut chunk = BoxedChunk::empty();
+        for x in 0..(CHUNK_WIDTH - 1) {
+            for z in 0..(CHUNK_LENGTH - 1) {
+                let position = LocalBlockPosition::unchecked_new(x, y, z);
+                chunk.set_block(&position, block);
+            }
+        }
+        chunk
     }
 
     pub fn get_ref(&self) -> ChunkRef<'_> {
@@ -173,7 +249,7 @@ impl<'a> ChunkRef<'a> {
 #[cfg(test)]
 mod test {
     use crate::chunk::{Chunk, ChunkMut, BoxedChunk, ChunkRef, LocalBlockPosition, CHUNK_HEIGHT, CHUNK_WIDTH, CHUNK_LENGTH, CHUNK_SIZE, Y_SIZE, X_SIZE, Z_SIZE};
-    use crate::block::{Block, BlockSize, MAX_BLOCK_ID};
+    use crate::block::{Block, BlockSize, MAX_BLOCK_ID, BlockRegistry, BlockDeclaration};
     use std::collections::HashSet;
 
     // Sanity checking that setting and getting blocks refer to the same position.
@@ -226,100 +302,109 @@ mod test {
             }
         }
     }
-
+    
     #[test]
-    fn surrounding_positions() {
-        struct SurroundingCoverage {
-            pub set: HashSet<(usize, usize, usize)>,
-        }
-
-        impl SurroundingCoverage {
-            fn assert_surrounding(&mut self, position: (usize, usize, usize), count: usize) {
-                let local_position = LocalBlockPosition::new(position.0, position.1, position.2).unwrap();
-                assert_eq!(surrounding_count(local_position), count, "position ({:?})", position);
-                self.set.insert(position);
-            }
-        }
-
-        fn surrounding_count(position: LocalBlockPosition) -> usize {
-            let (valid, positions) = position.surrounding();
-            valid.count_ones() as usize
-            //position.surrounding().iter().filter_map(|p| p.as_ref()).count()
-        }
-
-        let mut coverage = SurroundingCoverage { set: HashSet::new(), };
-
-        // Corners should have 3.
-        coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,                0), 3); // left bottom back
-        coverage.assert_surrounding((CHUNK_WIDTH - 1,                0, CHUNK_LENGTH - 1), 3); // left bottom front
-        coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,                0), 3); // left top back
-        coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1, CHUNK_LENGTH - 1), 3); // left top front
-        coverage.assert_surrounding((              0,                0,                0), 3); // right bottom back
-        coverage.assert_surrounding((              0,                0, CHUNK_LENGTH - 1), 3); // right bottom front
-        coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,                0), 3); // right top back
-        coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1, CHUNK_LENGTH - 1), 3); // right top front
-
-        // Edges should have 4
-        for x in 1..(CHUNK_WIDTH - 1) {
-            coverage.assert_surrounding((              x,                0,               0), 4);
-        }
-
-        for z in 1..(CHUNK_LENGTH - 1) {
-            coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,               z), 4);
-            coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,               z), 4);
-            coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,               z), 4);
-            coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,               z), 4);
-            coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,               z), 4);
-            coverage.assert_surrounding((              0,                0,               z), 4);
-            coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,               z), 4);
-            coverage.assert_surrounding((              0,                0,               z), 4);
-        }
-
-        for y in 1..(CHUNK_HEIGHT - 1) {
-            coverage.assert_surrounding((CHUNK_WIDTH - 1,               y, CHUNK_LENGTH - 1), 4);
-            coverage.assert_surrounding((CHUNK_WIDTH - 1,               y,                0), 4);
-            coverage.assert_surrounding((              0,               y, CHUNK_LENGTH - 1), 4);
-            coverage.assert_surrounding((              0,               y,                0), 4);
-        }
-
-        // Inner sides should have 5
-        for y in 1..(CHUNK_HEIGHT - 1) {
-            for z in 1..(CHUNK_LENGTH - 1) {
-                coverage.assert_surrounding((CHUNK_WIDTH - 1, y, z), 5);
-                coverage.assert_surrounding((              0, y, z), 5);
-            }
-        }
-
-        for x in 1..(CHUNK_WIDTH - 1) {
-            for z in 1..(CHUNK_LENGTH - 1) {
-                coverage.assert_surrounding((x, CHUNK_HEIGHT - 1, z), 5);
-                coverage.assert_surrounding((x,                0, z), 5);
-            }
-        }
-
-        for x in 1..(CHUNK_WIDTH - 1) {
-            for y in 1..(CHUNK_HEIGHT - 1) {
-                coverage.assert_surrounding((x, y, CHUNK_LENGTH - 1), 5);
-                coverage.assert_surrounding((x, y,                0), 5);
-            }
-        }
-
-        // Interiors should have 6
-        for x in 1..(CHUNK_WIDTH - 1) {
-            for y in 1..(CHUNK_HEIGHT - 1) {
-                for z in 1..(CHUNK_LENGTH - 1) {
-                    coverage.assert_surrounding((x, y, z), 6);
-                }
-            }
-        }
-
-        let mut count = 0;
-        for x in 0..(CHUNK_WIDTH - 1) {
-            for y in 0..(CHUNK_HEIGHT - 1) {
-                for z in 0..(CHUNK_LENGTH - 1) {
-                    assert!(coverage.set.contains(&(x, y, z)));
-                }
-            }
-        }
+    fn chunk_visible() {
+        let (registry, failures) = BlockRegistry::from_file("resources/registry.json").unwrap();
+        println!("failures: {:?}", failures);
+        let chunk = BoxedChunk::flat(Block::hard_create(16), 5);
+        let visible = chunk.visible_blocks(&registry);
+        println!("{:?}", visible);
     }
+
+    //#[test]
+    //fn surrounding_positions() {
+        //struct SurroundingCoverage {
+            //pub set: HashSet<(usize, usize, usize)>,
+        //}
+
+        //impl SurroundingCoverage {
+            //fn assert_surrounding(&mut self, position: (usize, usize, usize), count: usize) {
+                //let local_position = LocalBlockPosition::new(position.0, position.1, position.2).unwrap();
+                //assert_eq!(surrounding_count(local_position), count, "position ({:?})", position);
+                //self.set.insert(position);
+            //}
+        //}
+
+        //fn surrounding_count(position: LocalBlockPosition) -> usize {
+            //let (valid, positions) = position.surrounding();
+            //valid.count_ones() as usize
+            ////position.surrounding().iter().filter_map(|p| p.as_ref()).count()
+        //}
+
+        //let mut coverage = SurroundingCoverage { set: HashSet::new(), };
+
+        //// Corners should have 3.
+        //coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,                0), 3); // left bottom back
+        //coverage.assert_surrounding((CHUNK_WIDTH - 1,                0, CHUNK_LENGTH - 1), 3); // left bottom front
+        //coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,                0), 3); // left top back
+        //coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1, CHUNK_LENGTH - 1), 3); // left top front
+        //coverage.assert_surrounding((              0,                0,                0), 3); // right bottom back
+        //coverage.assert_surrounding((              0,                0, CHUNK_LENGTH - 1), 3); // right bottom front
+        //coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,                0), 3); // right top back
+        //coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1, CHUNK_LENGTH - 1), 3); // right top front
+
+        //// Edges should have 4
+        //for x in 1..(CHUNK_WIDTH - 1) {
+            //coverage.assert_surrounding((              x,                0,               0), 4);
+        //}
+
+        //for z in 1..(CHUNK_LENGTH - 1) {
+            //coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,               z), 4);
+            //coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,               z), 4);
+            //coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,               z), 4);
+            //coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,               z), 4);
+            //coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,               z), 4);
+            //coverage.assert_surrounding((              0,                0,               z), 4);
+            //coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,               z), 4);
+            //coverage.assert_surrounding((              0,                0,               z), 4);
+        //}
+
+        //for y in 1..(CHUNK_HEIGHT - 1) {
+            //coverage.assert_surrounding((CHUNK_WIDTH - 1,               y, CHUNK_LENGTH - 1), 4);
+            //coverage.assert_surrounding((CHUNK_WIDTH - 1,               y,                0), 4);
+            //coverage.assert_surrounding((              0,               y, CHUNK_LENGTH - 1), 4);
+            //coverage.assert_surrounding((              0,               y,                0), 4);
+        //}
+
+        //// Inner sides should have 5
+        //for y in 1..(CHUNK_HEIGHT - 1) {
+            //for z in 1..(CHUNK_LENGTH - 1) {
+                //coverage.assert_surrounding((CHUNK_WIDTH - 1, y, z), 5);
+                //coverage.assert_surrounding((              0, y, z), 5);
+            //}
+        //}
+
+        //for x in 1..(CHUNK_WIDTH - 1) {
+            //for z in 1..(CHUNK_LENGTH - 1) {
+                //coverage.assert_surrounding((x, CHUNK_HEIGHT - 1, z), 5);
+                //coverage.assert_surrounding((x,                0, z), 5);
+            //}
+        //}
+
+        //for x in 1..(CHUNK_WIDTH - 1) {
+            //for y in 1..(CHUNK_HEIGHT - 1) {
+                //coverage.assert_surrounding((x, y, CHUNK_LENGTH - 1), 5);
+                //coverage.assert_surrounding((x, y,                0), 5);
+            //}
+        //}
+
+        //// Interiors should have 6
+        //for x in 1..(CHUNK_WIDTH - 1) {
+            //for y in 1..(CHUNK_HEIGHT - 1) {
+                //for z in 1..(CHUNK_LENGTH - 1) {
+                    //coverage.assert_surrounding((x, y, z), 6);
+                //}
+            //}
+        //}
+
+        //let mut count = 0;
+        //for x in 0..(CHUNK_WIDTH - 1) {
+            //for y in 0..(CHUNK_HEIGHT - 1) {
+                //for z in 0..(CHUNK_LENGTH - 1) {
+                    //assert!(coverage.set.contains(&(x, y, z)));
+                //}
+            //}
+        //}
+    //}
 }

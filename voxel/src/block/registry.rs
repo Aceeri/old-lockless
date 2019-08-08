@@ -1,6 +1,6 @@
 //! Basic structure of a registry file:
 //!
-//! ```
+//! ```ignore
 //! {
 //!     // Block ids are stored in a map instead of array for easier manual lookup.
 //!
@@ -42,12 +42,12 @@ use crate::block::{Block, BlockSize, MAX_BLOCK_ID, MAX_BLOCK_TYPE, MAX_BLOCK_SUB
 macro_rules! block_declaration {
     ( $( $field:ident : $ty:ty ),* ) => {
 
-        #[derive(Clone, Deserialize, Serialize)]
+        #[derive(Debug, Clone, Deserialize, Serialize)]
         pub struct BlockDeclaration {
             $( $field: $ty ),*
         }
 
-        #[derive(Clone, Deserialize, Serialize)]
+        #[derive(Debug, Clone, Deserialize, Serialize)]
         pub struct BlockDeclarationPartial {
             #[serde(default)]
             $( $field: Option<$ty> ),*
@@ -88,6 +88,20 @@ block_declaration! {
     name: String,
     color: u16,
     transparency: u8
+}
+
+impl BlockDeclaration {
+    pub fn visible(&self) -> bool {
+        self.transparency != 255
+    }
+
+    pub fn opaque(&self) -> bool {
+        self.transparency == 0
+    }
+
+    pub fn transparency(&self) -> u8 {
+        self.transparency
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -148,7 +162,7 @@ impl BlockRegistryFile {
                     }
                 };
 
-                let index = MAX_BLOCK_TYPE * id; // 4096 * id.
+                let index = MAX_BLOCK_SUBTYPE * id; // 16 * id.
                 registry.set_declaration((index + subtype_id) as u16, Some(declaration));
             }
         }
@@ -161,6 +175,7 @@ pub struct BlockRegistry {
     registry: Vec<Option<BlockDeclaration>>,
 }
 
+#[derive(Debug)]
 pub enum RegistryError {
     JSON(serde_json::Error),
     IO(io::Error)
@@ -205,6 +220,7 @@ impl BlockRegistry {
     }
 
     pub fn set_declaration(&mut self, index: BlockSize, declaration: Option<BlockDeclaration>) {
+        info!(util::LOG, "setting index {}", index);
         self.registry[index as usize] = declaration;
     }
 }

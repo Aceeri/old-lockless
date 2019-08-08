@@ -9,5 +9,16 @@
                 "transparency": 255
             }
         }
+    },
+    "1": {
+        "default": {
+            "name": "Dirt"
+        },
+        "subtypes": {
+            "0": {
+                "color": 0,
+                "transparency": 0
+            }
+        }
     }
 }

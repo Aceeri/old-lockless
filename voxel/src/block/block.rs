@@ -14,7 +14,7 @@ pub const EMPTY_BLOCK: Block = Block::hard_create(0);
 pub struct Block(BlockSize);
 
 impl Block {
-    pub(crate) const fn hard_create(block: u16) -> Block {
+    pub const fn hard_create(block: u16) -> Block {
         Block(block)
     }
 

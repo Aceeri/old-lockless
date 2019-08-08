@@ -7,8 +7,8 @@ extern crate criterion;
 
 use std::io::Read;
 
-use voxel::chunk::{CHUNK_HEIGHT, CHUNK_WIDTH, CHUNK_LENGTH, LocalBlockPosition};
-use voxel::block::{BlockRegistry, BlockRegistryFile};
+use voxel::chunk::{Chunk, BoxedChunk, CHUNK_HEIGHT, CHUNK_WIDTH, CHUNK_LENGTH, LocalBlockPosition};
+use voxel::block::{Block, BlockRegistry, BlockRegistryFile};
 
 use criterion::Criterion;
 use criterion::black_box;
@@ -54,6 +54,12 @@ fn surrounding(c: &mut Criterion) {
             //}
         //}
     //}));
+    
+    let chunk = BoxedChunk::flat(Block::hard_create(16), 5);
+    let (registry, failures) = BlockRegistry::from_file("resources/registry.json").unwrap();
+    c.bench_function("visible_blocks", move |b| b.iter(|| {
+        chunk.visible_blocks(&registry);
+    }));
 }
 
 fn registry(c: &mut Criterion) {
@@ -63,15 +69,15 @@ fn registry(c: &mut Criterion) {
 
     let registry_file: BlockRegistryFile = serde_json::from_str(&buffer).unwrap();
 
-    c.bench_function("deserialize_registry", move |b| b.iter(|| {
-        BlockRegistry::from_str(black_box(&buffer));
-    }));
+    //c.bench_function("deserialize_registry", move |b| b.iter(|| {
+        //BlockRegistry::from_str(black_box(&buffer));
+    //}));
 
-    c.bench_function("convert_registryfile", move |b| b.iter(|| {
-        let mut registry = BlockRegistry::empty();
-        let failures = registry_file.into_registry(black_box(&mut registry));
-    }));
+    //c.bench_function("convert_registryfile", move |b| b.iter(|| {
+        //let mut registry = BlockRegistry::empty();
+        //let failures = registry_file.into_registry(black_box(&mut registry));
+    //}));
 }
 
-criterion_group!(benches, registry);
+criterion_group!(benches, surrounding, registry);
 criterion_main!(benches);
