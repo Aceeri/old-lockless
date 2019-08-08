@@ -1,5 +1,5 @@
 
-use crate::block::{Block, BlockSize};
+use crate::block::{Block, BlockSize, EMPTY_BLOCK};
 
 pub const CHUNK_HEIGHT: usize = 64; // Y
 pub const CHUNK_WIDTH: usize = 64; // X
@@ -9,8 +9,6 @@ pub const CHUNK_SIZE: usize = CHUNK_HEIGHT * CHUNK_WIDTH * CHUNK_LENGTH;
 pub const Y_SIZE: usize = CHUNK_HEIGHT * CHUNK_WIDTH;
 pub const X_SIZE: usize = CHUNK_WIDTH;
 pub const Z_SIZE: usize = 1;
-
-pub const EMPTY_BLOCK: Block = Block::hard_create(0);
 
 pub const fn chunk_index(x: usize, y: usize, z: usize) -> usize {
     (y * Y_SIZE) + (x * X_SIZE) + (z * Z_SIZE)
@@ -37,17 +35,18 @@ impl LocalBlockPosition {
     }
 
     pub fn index(&self) -> usize {
-        chunk_index(self.x as usize, self.y as usize, self.z as usize)
+        chunk_index(self.x, self.y, self.z)
     }
 
-    pub fn possible_surrounding(&self) -> [LocalBlockPosition; 6] {
+    #[inline]
+    pub const fn possible_surrounding(&self) -> [LocalBlockPosition; 6] {
         [
             LocalBlockPosition { x: self.x + 1, y: self.y, z: self.z },
             LocalBlockPosition { x: self.x, y: self.y + 1, z: self.z },
             LocalBlockPosition { x: self.x, y: self.y, z: self.z + 1 },
-            LocalBlockPosition { x: self.x - 1, y: self.y, z: self.z },
-            LocalBlockPosition { x: self.x, y: self.y - 1, z: self.z },
-            LocalBlockPosition { x: self.x, y: self.y, z: self.z - 1 },
+            LocalBlockPosition { x: self.x.wrapping_sub(1), y: self.y, z: self.z },
+            LocalBlockPosition { x: self.x, y: self.y.wrapping_sub(1), z: self.z },
+            LocalBlockPosition { x: self.x, y: self.y, z: self.z.wrapping_sub(1) },
         ]
     }
 
@@ -55,27 +54,27 @@ impl LocalBlockPosition {
         let mut positions = self.possible_surrounding();
         let mut valid = 0b0011_1111;
         if self.x + 1 >= CHUNK_WIDTH {
-            valid |= 0b0000_0001;
+            valid ^= 0b0000_0001;
         }
 
         if self.y + 1 >= CHUNK_HEIGHT {
-            valid |= 0b0000_0010;
+            valid ^= 0b0000_0010;
         }
 
         if self.z + 1 >= CHUNK_LENGTH {
-            valid |= 0b0000_0100;
+            valid ^= 0b0000_0100;
         }
 
         if self.x == 0 {
-            valid |= 0b0000_1000;
+            valid ^= 0b0000_1000;
         }
 
         if self.y == 0 {
-            valid |= 0b0001_0000;
+            valid ^= 0b0001_0000;
         }
 
         if self.z == 0 {
-            valid |= 0b0010_0000;
+            valid ^= 0b0010_0000;
         }
 
         (valid, positions)
@@ -92,6 +91,8 @@ impl LocalBlockPosition {
 
 pub trait Chunk {
     fn block(&self, position: &LocalBlockPosition) -> Block;
+    // An active block is defined as any block that is surrounded by at least 1 non-opaque block.
+    //fn active(&self, position: &LocalBlockPosition) -> bool;
 }
 
 pub trait ChunkMut {
@@ -235,14 +236,14 @@ mod test {
         impl SurroundingCoverage {
             fn assert_surrounding(&mut self, position: (usize, usize, usize), count: usize) {
                 let local_position = LocalBlockPosition::new(position.0, position.1, position.2).unwrap();
-                assert_eq!(surrounding_count(local_position), count);
+                assert_eq!(surrounding_count(local_position), count, "position ({:?})", position);
                 self.set.insert(position);
             }
         }
 
         fn surrounding_count(position: LocalBlockPosition) -> usize {
             let (valid, positions) = position.surrounding();
-            positions.len()
+            valid.count_ones() as usize
             //position.surrounding().iter().filter_map(|p| p.as_ref()).count()
         }
 
