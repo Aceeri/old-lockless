@@ -1,0 +1,13 @@
+{
+    "0": {
+        "default": {
+            "name": "Air"
+        },
+        "subtypes": {
+            "0": {
+                "color": 0,
+                "transparency": 255
+            }
+        }
+    }
+}

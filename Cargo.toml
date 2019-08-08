@@ -4,6 +4,7 @@ members = [
     "server",
     "renderer",
     "voxel",
+    "util",
 ]
 
 [profile.dev]

@@ -32,6 +32,7 @@
 
 use std::path::Path;
 use std::collections::HashMap;
+use std::io;
 
 use serde::de::Deserialize;
 use serde::ser::Serialize;
@@ -48,6 +49,7 @@ macro_rules! block_declaration {
 
         #[derive(Clone, Deserialize, Serialize)]
         pub struct BlockDeclarationPartial {
+            #[serde(default)]
             $( $field: Option<$ty> ),*
         }
 
@@ -95,10 +97,9 @@ pub struct BlockDeclarationParent {
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct BlockRegistryFile {
-    map: HashMap<usize, BlockDeclarationParent>,
-}
+pub struct BlockRegistryFile(HashMap<usize, BlockDeclarationParent>);
 
+#[derive(Debug)]
 pub struct FailedDeclaration {
     id: usize,
     subtype: Option<usize>,
@@ -108,7 +109,7 @@ pub struct FailedDeclaration {
 impl BlockRegistryFile {
     pub fn into_registry(&self, registry: &mut BlockRegistry) -> Vec<FailedDeclaration> {
         let mut failures = Vec::new();
-        for (id, parent) in &self.map {
+        for (id, parent) in &self.0 {
             if *id > MAX_BLOCK_TYPE {
                 failures.push(FailedDeclaration {
                     id: *id,
@@ -160,6 +161,11 @@ pub struct BlockRegistry {
     registry: Vec<Option<BlockDeclaration>>,
 }
 
+pub enum RegistryError {
+    JSON(serde_json::Error),
+    IO(io::Error)
+}
+
 impl BlockRegistry {
     pub fn empty() -> BlockRegistry {
         let mut registry = BlockRegistry {
@@ -169,9 +175,29 @@ impl BlockRegistry {
         registry
     }
 
-    pub fn from_file<P: AsRef<Path>>(path: P) -> BlockRegistry {
+    pub fn from_reader<R: io::Read>(reader: R) -> Result<(BlockRegistry, Vec<FailedDeclaration>), RegistryError> {
+        let registry_file: BlockRegistryFile = serde_json::from_reader(reader)
+            .map_err(|e| RegistryError::JSON(e))?;
+
         let mut registry = BlockRegistry::empty();
-        registry
+        let failures = registry_file.into_registry(&mut registry);
+        Ok((registry, failures))
+    }
+
+    pub fn from_str(string: &str) -> Result<(BlockRegistry, Vec<FailedDeclaration>), RegistryError> {
+        let registry_file: BlockRegistryFile = serde_json::from_str(string)
+            .map_err(|e| RegistryError::JSON(e))?;
+
+        let mut registry = BlockRegistry::empty();
+        let failures = registry_file.into_registry(&mut registry);
+        Ok((registry, failures))
+    }
+
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<(BlockRegistry, Vec<FailedDeclaration>), RegistryError> {
+        let file = std::fs::File::open(path)
+            .map_err(|e| RegistryError::IO(e))?;
+
+        BlockRegistry::from_reader(file)
     }
 
     pub fn declaration(&self, block: Block) -> &Option<BlockDeclaration> {
