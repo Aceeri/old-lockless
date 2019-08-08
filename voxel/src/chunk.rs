@@ -169,6 +169,7 @@ impl<'a> ChunkRef<'a> {
 mod test {
     use crate::chunk::{Chunk, ChunkMut, BoxedChunk, ChunkRef, LocalBlockPosition, CHUNK_HEIGHT, CHUNK_WIDTH, CHUNK_LENGTH, CHUNK_SIZE, Y_SIZE, X_SIZE, Z_SIZE};
     use crate::block::{Block, BlockSize, MAX_BLOCK_ID};
+    use std::collections::HashSet;
 
     // Sanity checking that setting and getting blocks refer to the same position.
     #[test]
@@ -223,46 +224,96 @@ mod test {
 
     #[test]
     fn surrounding_positions() {
-        fn assert_surrounding(position: (usize, usize, usize), count: usize) {
-            let position = LocalBlockPosition::new(position.0, position.1, position.2).unwrap();
-            assert_eq!(surrounding_count(position), count);
+        struct SurroundingCoverage {
+            pub set: HashSet<(usize, usize, usize)>,
+        }
+
+        impl SurroundingCoverage {
+            fn assert_surrounding(&mut self, position: (usize, usize, usize), count: usize) {
+                let local_position = LocalBlockPosition::new(position.0, position.1, position.2).unwrap();
+                assert_eq!(surrounding_count(local_position), count);
+                self.set.insert(position);
+            }
         }
 
         fn surrounding_count(position: LocalBlockPosition) -> usize {
             position.surrounding().iter().filter_map(|p| p.as_ref()).count()
         }
 
+        let mut coverage = SurroundingCoverage { set: HashSet::new(), };
+
         // Corners should have 3.
-        assert_surrounding((CHUNK_WIDTH - 1,                0,                0), 3); // left bottom back
-        assert_surrounding((CHUNK_WIDTH - 1,                0, CHUNK_LENGTH - 1), 3); // left bottom front
-        assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,                0), 3); // left top back
-        assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1, CHUNK_LENGTH - 1), 3); // left top front
-        assert_surrounding((              0,                0,                0), 3); // right bottom back
-        assert_surrounding((              0,                0, CHUNK_LENGTH - 1), 3); // right bottom front
-        assert_surrounding((              0, CHUNK_HEIGHT - 1,                0), 3); // right top back
-        assert_surrounding((              0, CHUNK_HEIGHT - 1, CHUNK_LENGTH - 1), 3); // right top front
+        coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,                0), 3); // left bottom back
+        coverage.assert_surrounding((CHUNK_WIDTH - 1,                0, CHUNK_LENGTH - 1), 3); // left bottom front
+        coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,                0), 3); // left top back
+        coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1, CHUNK_LENGTH - 1), 3); // left top front
+        coverage.assert_surrounding((              0,                0,                0), 3); // right bottom back
+        coverage.assert_surrounding((              0,                0, CHUNK_LENGTH - 1), 3); // right bottom front
+        coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,                0), 3); // right top back
+        coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1, CHUNK_LENGTH - 1), 3); // right top front
 
         // Edges should have 4
-        assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,               32), 4);
-        assert_surrounding((CHUNK_WIDTH - 1,                0,               32), 4);
-        assert_surrounding((CHUNK_WIDTH - 1,               32, CHUNK_LENGTH - 1), 4);
-        assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,               32), 4);
-        assert_surrounding((CHUNK_WIDTH - 1,               32,                0), 4);
-        assert_surrounding((CHUNK_WIDTH - 1,                0,               32), 4);
-        assert_surrounding((              0, CHUNK_HEIGHT - 1,               32), 4);
-        assert_surrounding((              0,                0,               32), 4);
-        assert_surrounding((              0,               32, CHUNK_LENGTH - 1), 4);
-        assert_surrounding((              0, CHUNK_HEIGHT - 1,               32), 4);
-        assert_surrounding((              0,               32,                0), 4);
-        assert_surrounding((              0,                0,               32), 4);
+        for x in 1..(CHUNK_WIDTH - 1) {
+            coverage.assert_surrounding((              x,                0,               0), 4);
+        }
+
+        for z in 1..(CHUNK_LENGTH - 1) {
+            coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,               z), 4);
+            coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,               z), 4);
+            coverage.assert_surrounding((CHUNK_WIDTH - 1, CHUNK_HEIGHT - 1,               z), 4);
+            coverage.assert_surrounding((CHUNK_WIDTH - 1,                0,               z), 4);
+            coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,               z), 4);
+            coverage.assert_surrounding((              0,                0,               z), 4);
+            coverage.assert_surrounding((              0, CHUNK_HEIGHT - 1,               z), 4);
+            coverage.assert_surrounding((              0,                0,               z), 4);
+        }
+
+        for y in 1..(CHUNK_HEIGHT - 1) {
+            coverage.assert_surrounding((CHUNK_WIDTH - 1,               y, CHUNK_LENGTH - 1), 4);
+            coverage.assert_surrounding((CHUNK_WIDTH - 1,               y,                0), 4);
+            coverage.assert_surrounding((              0,               y, CHUNK_LENGTH - 1), 4);
+            coverage.assert_surrounding((              0,               y,                0), 4);
+        }
 
         // Inner sides should have 5
-        assert_surrounding((CHUNK_WIDTH - 1, 32, 32), 5);
-        assert_surrounding((32, CHUNK_HEIGHT - 1, 32), 5);
-        assert_surrounding((32, 32, CHUNK_LENGTH - 1), 5);
+        for y in 1..(CHUNK_HEIGHT - 1) {
+            for z in 1..(CHUNK_LENGTH - 1) {
+                coverage.assert_surrounding((CHUNK_WIDTH - 1, y, z), 5);
+                coverage.assert_surrounding((              0, y, z), 5);
+            }
+        }
+
+        for x in 1..(CHUNK_WIDTH - 1) {
+            for z in 1..(CHUNK_LENGTH - 1) {
+                coverage.assert_surrounding((x, CHUNK_HEIGHT - 1, z), 5);
+                coverage.assert_surrounding((x,                0, z), 5);
+            }
+        }
+
+        for x in 1..(CHUNK_WIDTH - 1) {
+            for y in 1..(CHUNK_HEIGHT - 1) {
+                coverage.assert_surrounding((x, y, CHUNK_LENGTH - 1), 5);
+                coverage.assert_surrounding((x, y,                0), 5);
+            }
+        }
 
         // Interiors should have 6
-        assert_surrounding((32, 32, 32), 6);
+        for x in 1..(CHUNK_WIDTH - 1) {
+            for y in 1..(CHUNK_HEIGHT - 1) {
+                for z in 1..(CHUNK_LENGTH - 1) {
+                    coverage.assert_surrounding((x, y, z), 6);
+                }
+            }
+        }
+
+        let mut count = 0;
+        for x in 0..(CHUNK_WIDTH - 1) {
+            for y in 0..(CHUNK_HEIGHT - 1) {
+                for z in 0..(CHUNK_LENGTH - 1) {
+                    assert!(coverage.set.contains(&(x, y, z)));
+                }
+            }
+        }
     }
 }
 
