@@ -1,24 +1,14 @@
 {
     "0": {
-        "default": {
-            "name": "Air"
-        },
-        "subtypes": {
-            "0": {
-                "color": 0,
-                "transparency": 255
-            }
-        }
+        "group": "Air",
+        "name": "Air",
+        "color": [0, 0, 0],
+        "transparency": 255
     },
     "1": {
-        "default": {
-            "name": "Dirt"
-        },
-        "subtypes": {
-            "0": {
-                "color": 0,
-                "transparency": 0
-            }
-        }
+        "group": "Dirt",
+        "name": "Dirt",
+        "color": [165, 42, 42],
+        "transparency": 0
     }
 }

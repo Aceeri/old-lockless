@@ -5,27 +5,12 @@
 //!     // Block ids are stored in a map instead of array for easier manual lookup.
 //!
 //!     0: {
-//!         default: {
-//!             name: "Air", 
-//!             color: (0, 0, 0), // RGB (0-255, 0-255, 0-255)
-//!             transparency: 255, // Transparency of block (0-255)
-//!             collidable: 0, // Whether the player moves through the block 
-//!             // (0 = not collidable, 255 = fully stable)
-//!             hardness: 255, // Destructability (255 = indestructible)
-//!         },
-//!
-//!         subtypes: {
-//!             // Subtypes similarly are stored in map of id -> subtype.
-//!
-//!             0: { 
-//!                 // These fields override the defaults of the block.
-//!                 // All fields above are also valid here.
-//!
-//!                 name: "Air",
-//!                 color: (0, 0, 0),
-//!                 transparency: 255,
-//!             }
-//!         }
+//!         group: "Empty",
+//!         name: "Air", 
+//!         color: (0, 0, 0), // RGB (0-255, 0-255, 0-255)
+//!         transparency: 255, // Transparency of block (0-255)
+//!         collidable: 0, // Whether the player moves through the block // (0 = not collidable, 255 = fully stable) 
+//!         hardness: 255, // Destructability (255 = indestructible)
 //!     },
 //! }
 //! ```
@@ -34,60 +19,16 @@ use std::path::Path;
 use std::collections::HashMap;
 use std::io;
 
-use serde::de::Deserialize;
-use serde::ser::Serialize;
+use crate::block::{Block, BlockSize, MAX_BLOCK_ID};
 
-use crate::block::{Block, BlockSize, MAX_BLOCK_ID, MAX_BLOCK_TYPE, MAX_BLOCK_SUBTYPE, EMPTY_BLOCK};
-
-macro_rules! block_declaration {
-    ( $( $field:ident : $ty:ty ),* ) => {
-
-        #[derive(Debug, Clone, Deserialize, Serialize)]
-        pub struct BlockDeclaration {
-            $( $field: $ty ),*
-        }
-
-        #[derive(Debug, Clone, Deserialize, Serialize)]
-        pub struct BlockDeclarationPartial {
-            #[serde(default)]
-            $( $field: Option<$ty> ),*
-        }
-
-        impl BlockDeclarationPartial {
-            pub fn merge(&self, subtype: &BlockDeclarationPartial) -> BlockDeclarationPartial {
-                let mut merged = self.clone();
-                $(
-                    if let Some(ref field) = subtype.$field {
-                        merged.$field = Some(field.clone());
-                    }
-                )*
-                merged
-            }
-
-            pub fn into_full(&self) -> Result<BlockDeclaration, Vec<(&'static str, &'static str)>> {
-                let mut missing = Vec::new();
-                $(
-                    if let None = self.$field {
-                        missing.push((stringify!($field), stringify!($ty)));
-                    }
-                )*
-
-                if missing.len() > 0 {
-                    return Err(missing);
-                }
-
-                Ok(BlockDeclaration {
-                    $( $field: self.$field.clone().unwrap(), )*
-                })
-            }
-        }
-    };
-}
-
-block_declaration! {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockDeclaration {
+    group: String,
     name: String,
-    color: u16,
-    transparency: u8
+    color: (u8, u8, u8),
+    transparency: u8,
+    //collidable: u8,
+    //hardness: u8,
 }
 
 impl BlockDeclaration {
@@ -104,14 +45,8 @@ impl BlockDeclaration {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
-pub struct BlockDeclarationParent {
-    default: BlockDeclarationPartial,
-    subtypes: HashMap<usize, BlockDeclarationPartial>,
-}
-
 #[derive(Deserialize, Serialize)]
-pub struct BlockRegistryFile(HashMap<usize, BlockDeclarationParent>);
+pub struct BlockRegistryFile(HashMap<usize, BlockDeclaration>);
 
 #[derive(Debug)]
 pub struct FailedDeclaration {
@@ -123,48 +58,18 @@ pub struct FailedDeclaration {
 impl BlockRegistryFile {
     pub fn into_registry(&self, registry: &mut BlockRegistry) -> Vec<FailedDeclaration> {
         let mut failures = Vec::new();
-        for (id, parent) in &self.0 {
-            if *id > MAX_BLOCK_TYPE {
+        for (id, declaration) in &self.0 {
+            if *id > MAX_BLOCK_ID {
                 failures.push(FailedDeclaration {
                     id: *id,
                     subtype: None,
-                    reason: format!("id {} is larger than max block type {}", id, MAX_BLOCK_TYPE),
+                    reason: format!("id {} is larger than max block type {}", id, MAX_BLOCK_ID),
                 });
 
                 continue;
             }
 
-            for (subtype_id, partial) in &parent.subtypes {
-                if *subtype_id > MAX_BLOCK_SUBTYPE {
-                    failures.push(FailedDeclaration {
-                        id: *id,
-                        subtype: Some(*subtype_id),
-                        reason: format!(
-                            "subtype id {} (id {}) is larger than max block subtype {}", 
-                            subtype_id, id, MAX_BLOCK_SUBTYPE
-                        ),
-                    });
-
-                    continue;
-                }
-
-                let merged = parent.default.merge(partial);
-                let declaration = match merged.into_full() {
-                    Ok(declaration) => declaration,
-                    Err(missing_fields) => {
-                        failures.push(FailedDeclaration {
-                            id: *id,
-                            subtype: Some(*subtype_id),
-                            reason: format!("missing fields: {:?}", missing_fields),
-                        });
-
-                        continue;
-                    }
-                };
-
-                let index = MAX_BLOCK_SUBTYPE * id; // 16 * id.
-                registry.set_declaration((index + subtype_id) as u16, Some(declaration));
-            }
+            registry.set_declaration(*id as u16, Some(declaration.clone()));
         }
         failures
     }
@@ -173,6 +78,7 @@ impl BlockRegistryFile {
 #[derive(Clone)]
 pub struct BlockRegistry {
     registry: Vec<Option<BlockDeclaration>>,
+    groups: HashMap<String, Vec<usize>>,
 }
 
 #[derive(Debug)]
@@ -183,8 +89,9 @@ pub enum RegistryError {
 
 impl BlockRegistry {
     pub fn empty() -> BlockRegistry {
-        let mut registry = BlockRegistry {
+        let registry = BlockRegistry {
             registry: vec![None; MAX_BLOCK_ID],
+            groups: HashMap::new(),
         };
 
         registry
@@ -215,13 +122,30 @@ impl BlockRegistry {
         BlockRegistry::from_reader(file)
     }
 
+    #[inline]
     pub fn declaration(&self, block: Block) -> &Option<BlockDeclaration> {
         &self.registry[block.id() as usize]
     }
 
+    #[inline]
     pub fn set_declaration(&mut self, index: BlockSize, declaration: Option<BlockDeclaration>) {
-        info!(util::LOG, "setting index {}", index);
+        info!(util::LOG, "setting block {}: {:?}", index, declaration);
         self.registry[index as usize] = declaration;
+    }
+
+    pub fn blocks_in_group<S: AsRef<String>>(&self, group: S) -> Option<Vec<&BlockDeclaration>> {
+        match self.groups.get(group.as_ref()) {
+            Some(group) => {
+                let mut grouped = Vec::new();
+                for index in group {
+                    if let Some(declaration) = self.registry[*index].as_ref() {
+                        grouped.push(declaration);
+                    }
+                }
+                Some(grouped)
+            },
+            None => None,
+        }
     }
 }
 

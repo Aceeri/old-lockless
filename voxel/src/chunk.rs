@@ -1,5 +1,5 @@
 
-use crate::block::{Block, BlockSize, EMPTY_BLOCK, BlockRegistry, BlockDeclaration};
+use crate::block::{Block, EMPTY_BLOCK, BlockRegistry, BlockDeclaration};
 
 pub const CHUNK_HEIGHT: usize = 64; // Y
 pub const CHUNK_WIDTH: usize = 64; // X
@@ -51,7 +51,7 @@ impl LocalBlockPosition {
     }
 
     pub fn surrounding(&self) -> (usize, [LocalBlockPosition; 6]) {
-        let mut positions = self.possible_surrounding();
+        let positions = self.possible_surrounding();
         let mut valid = 0b0011_1111;
         if self.x + 1 >= CHUNK_WIDTH {
             valid ^= 0b0000_0001;
@@ -307,7 +307,7 @@ mod test {
     fn chunk_visible() {
         let (registry, failures) = BlockRegistry::from_file("resources/registry.json").unwrap();
         println!("failures: {:?}", failures);
-        let chunk = BoxedChunk::flat(Block::hard_create(16), 5);
+        let chunk = BoxedChunk::flat(Block::hard_create(1), 5);
         let visible = chunk.visible_blocks(&registry);
         println!("{:?}", visible);
     }
