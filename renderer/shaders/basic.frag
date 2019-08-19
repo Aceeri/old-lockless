@@ -11,7 +11,7 @@ layout(location = 0) out vec4 color;
 struct Light {
     vec3 pos;
     float pad;
-    float intencity;
+    float intensity;
 };
 
 layout(std140, set = 0, binding = 0) uniform Args {
@@ -32,11 +32,11 @@ void main() {
     for (int i = 0; i < lights_count; ++i) {
         vec3 v = lights[i].pos - frag_pos;
         float d = length(v);
-        float l = lights[i].intencity / d / d;
+        float l = lights[i].intensity / d / d;
         l *= max(0.0, dot(normalize(v), frag_norm));
         acc += l;
         // acc += 0.5;
-        // acc += lights[i].intencity;
+        // acc += lights[i].intensity;
     }
     acc = min(acc, 1.0);
     color = frag_color * vec4(acc, acc, acc, 1.0);

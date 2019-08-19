@@ -14,3 +14,10 @@ opt-level = 2
 debug = true
 codegen-units = 1
 lto = true
+
+[patch.crates-io]
+gfx-hal = { path = "../gfx/src/hal", version = "0.3" }
+gfx-backend-empty = { path = "../gfx/src/backend/empty", version = "0.3", features = ["winit"] }
+gfx-backend-dx12 = { path = "../gfx/src/backend/dx12", version = "0.3", features = ["winit"] }
+gfx-backend-metal = { path = "../gfx/src/backend/metal", version = "0.3", features = ["winit"] }
+gfx-backend-vulkan = { path = "../gfx/src/backend/vulkan", version = "0.3", features = ["winit", "x11"] }

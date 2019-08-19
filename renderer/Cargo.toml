@@ -4,5 +4,23 @@ version = "0.1.0"
 authors = ["Aceeri <conmcclusk@gmail.com>"]
 edition = "2018"
 
+[features]
+default = ["vulkan"]
+vulkan = ["rendy/vulkan"]
+dx12 = ["rendy/dx12"]
+metal = ["rendy/metal"]
+
 [dependencies]
-rendy = { path = "../rendy", version = "0.3.2" }
+util = { path = "../util" }
+
+rendy = { path = "../../rendy/rendy", version = "0.3.2" }
+nalgebra = "0.18.0"
+failure = "0.1"
+gfx-hal = "0.3"
+thread_profiler = "0.3"
+genmesh = "0.6"
+env_logger = "0.6"
+lazy_static = "1.0"
+log = "0.4"
+palette = "0.4"
+rand = "0.7"

@@ -1,10 +1,10 @@
 
 #[macro_use]
-extern crate serde;
-extern crate serde_json;
+extern crate util;
 
 #[macro_use]
-extern crate util;
+extern crate serde;
+extern crate serde_json;
 
 pub mod chunk;
 pub mod block;
